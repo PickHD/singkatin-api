@@ -4,7 +4,6 @@ module.exports = {
         "commonjs": true,
         "es6": true,
         "mocha": true,
-        "chai": true
     },
     "extends": "eslint:recommended",
     "globals": {

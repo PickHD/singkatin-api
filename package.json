@@ -1,5 +1,5 @@
 {
-  "name": "singkatin_api",
+  "name": "singkatin-api",
   "version": "1.0.0",
   "description": "Url Shortener API with Express.js",
   "main": "server.js",
@@ -37,6 +37,13 @@
     "nyc": "^15.1.0",
     "sequelize-cli": "^6.2.0",
     "supertest": "^6.0.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pickHD/singkatin_api.git"
+  },
+  "bugs": {
+    "url": "https://github.com/pickHD/singkatin_api/issues"
   },
   "engines": {
     "node": "12.x",

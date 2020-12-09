@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "nodemon ./api/server.js",
     "start": "node ./api/server.js",
+    "eslint": "eslint --fix ./api",
     "test": "mocha './test/**/*.test.js' --exit || true --timeout 10000 ",
     "migrate": "cd ./api && npx sequelize-cli db:migrate all",
     "undo_migrate": "cd ./api && npx sequelize-cli db:migrate:undo:all"

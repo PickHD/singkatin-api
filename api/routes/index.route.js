@@ -3,7 +3,9 @@ const router = require("express").Router();
 const short = require("./short.route");
 const requester = require("./requester.route");
 
-router.get("/", (req, res) => {
+const { fetchLimiter } = require("../middlewares/rateLimitHandler.middleware");
+
+router.get("/",[fetchLimiter], (req, res) => {
     return res.status(200).json({
         title: "Singkatin API Gateway",
         success: true,

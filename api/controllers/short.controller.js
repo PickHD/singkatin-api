@@ -67,7 +67,7 @@ exports.getRedirectUrl = async (req, res, next) => {
                 res.statusCode = 404;
                 return next(new Error(`${shortUrl} not found, make sure to check the data first`));
             } else {
-                await Short.update({ visited: findShortUrl.visited +=1 }, {
+                await Short.update({ visited: findShortUrl.visited += 1 }, {
                     where: {
                         short_url: shortUrl
                     }
@@ -88,5 +88,36 @@ exports.getRedirectUrl = async (req, res, next) => {
 };
 
 exports.delOneShortUrlHandler = async (req, res, next) => {
-
+    try {
+        const { shortUrl } = req.params;
+        const badReqError = validationResult(req);
+        if (!badReqError.isEmpty()) {
+            return res.status(400).json({ validation_errors: badReqError.array() });
+        } else {
+            const findShortUrl = await Short.findOne({
+                where: {
+                    short_url: shortUrl
+                }
+            });
+            if (!findShortUrl) {
+                res.statusCode = 404;
+                return next(new Error(`${shortUrl} not found, make sure to check the data first`));
+            } else {
+                await Short.destroy({
+                    where: {
+                        short_url: shortUrl
+                    }
+                });
+                return res.status(200).json({
+                    success:true,
+                    data:{
+                        msg:`Short URL ${shortUrl} was successfully deleted.`
+                    }
+                });
+            }
+        }
+    } catch (e) {
+        res.statusCode = 500;
+        return next(e);
+    }
 };

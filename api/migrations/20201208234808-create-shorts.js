@@ -1,5 +1,5 @@
 "use strict";
-const {nanoid} = require("nanoid");
+
 module.exports = {
     up: async (queryInterface, Sequelize) => {
         await queryInterface.createTable("Shorts", {
@@ -16,7 +16,6 @@ module.exports = {
             short_url: {
                 type: Sequelize.STRING,
                 allowNull: false,
-                defaultValue:nanoid(7)
             },
             clicked: {
                 type: Sequelize.INTEGER,

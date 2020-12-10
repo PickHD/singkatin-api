@@ -15,7 +15,7 @@ const api = require("./routes/index.route");
     try {
         let cache = apiCache.options({
             statusCodes: {
-                exclude: [400, 404, 403],
+                exclude: [203, 400, 401, 403, 404, 403, 429, 500, 501, 503],
                 include: [200],
             }
         }).middleware;

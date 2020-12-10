@@ -8,7 +8,7 @@ const fetchLimiter = rateLimit({
 const createLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 3, // start blocking after 3 requests
-    message: { success: false, err_code: 429, err_message: "TToo many tokens/request created, please try again after an hour", stack: null }
+    message: { success: false, err_code: 429, err_message: "Too many tokens/request created, please try again after an hour", stack: null }
 });
 
 module.exports = {

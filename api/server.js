@@ -18,7 +18,7 @@ const routeNotFound = require("./middlewares/routeNotFound.middleware");
     try {
         let cache = apiCache.options({
             statusCodes: {
-                exclude: [203, 400, 401, 403, 404, 403, 429, 500, 501, 503],
+                exclude: [203, 400, 401, 404, 429, 500, 501, 503],
                 include: [200],
             }
         }).middleware;
@@ -31,11 +31,11 @@ const routeNotFound = require("./middlewares/routeNotFound.middleware");
 
         if (process.env.NODE_ENV === "production") {
             app.use(morgan("short"));
-            app.use(cache("30 min"));
+            app.use(cache("15 min"));
             await db.sequelize.authenticate();
         } else {
             app.use(morgan("dev"));
-            db.sequelize.sync({});
+            db.sequelize.sync({ force: true });
         }
 
         app.use("/", api);

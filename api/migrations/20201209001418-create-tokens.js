@@ -12,8 +12,9 @@ module.exports = {
                 type: Sequelize.STRING,
                 allowNull: false
             },
-            requester_id: {
-                type: Sequelize.INTEGER
+            RequesterId: {
+                type: Sequelize.INTEGER,
+                allowNull: false
             },
             createdAt: {
                 allowNull: false,
@@ -25,10 +26,10 @@ module.exports = {
             }
         });
         await queryInterface.addConstraint("Tokens", {
-            fields: ["requester_id"],
+            fields: ["RequesterId"],
             type: "foreign key",
             name: "requester_fkey_constraint",
-            references: { 
+            references: {
                 table: "Requesters",
                 field: "id"
             },

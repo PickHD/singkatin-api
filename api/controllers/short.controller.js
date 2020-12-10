@@ -9,7 +9,7 @@ exports.getAllUrl = async (req, res, next) => {
 
         const { count, rows } = await Short.findAndCountAll({ raw: true });
 
-        return res.json({
+        return res.status(200).json({
             success: true,
             data: {
                 count: count,

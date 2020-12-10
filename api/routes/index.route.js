@@ -5,7 +5,7 @@ const requester = require("./requester.route");
 
 const { fetchLimiter } = require("../middlewares/rateLimitHandler.middleware");
 
-router.get("/",[fetchLimiter], (req, res) => {
+router.get("/", [fetchLimiter], (req, res) => {
     return res.status(200).json({
         title: "Singkatin API Gateway",
         success: true,
@@ -17,25 +17,25 @@ router.get("/",[fetchLimiter], (req, res) => {
                 refLink: [
                     {
                         method: "GET",
-                        url: `${req.protocol}://${req.hostname}/api/v1/url`,
+                        url: `${req.protocol}://${req.headers.host}/api/v1/url`,
                         description: "Retrieve all url shortened",
                         status: {
                             code: [200, 401, 429, 500],
                             cached: true,
                             middleware: true,
-                            needApiKey: true
+                            apiKeyRequired: true
                         }
 
                     },
                     {
                         method: "POST",
-                        url: `${req.protocol}://${req.hostname}/api/v1/url`,
+                        url: `${req.protocol}://${req.headers.host}/api/v1/url`,
                         description: "Create a url shortened",
                         status: {
                             code: [201, 400, 401, 429, 500],
                             cached: false,
                             middleware: true,
-                            needApiKey: true
+                            apiKeyRequired: true
                         },
                         body: {
                             fields: [{ name: "full_url", type: "string", maxLength: 255 }, { name: "short_url", type: "string", maxLength: 255 }],
@@ -45,35 +45,35 @@ router.get("/",[fetchLimiter], (req, res) => {
                     },
                     {
                         method: "GET",
-                        url: `${req.protocol}://${req.hostname}/api/v1/url/{shortUrl}`,
+                        url: `${req.protocol}://${req.headers.host}/api/v1/url/{shortUrl}`,
                         description: "Redirecting to real url selected by shortUrl in parameter itself",
                         status: {
-                            code: [200, 401, 404, 500],
+                            code: [200, 401, 404, 429, 500],
                             cached: true,
                             middleware: true,
-                            needApiKey: true
+                            apiKeyRequired: true
                         },
                         parameter: {
                             name: "shortUrl",
                             type: "string",
-                            constLength: 7,
-                            required: true
+                            fixLength: 7,
+                            apiKeyRequired: true
                         }
                     },
                     {
                         method: "DELETE",
-                        url: `${req.protocol}://${req.hostname}/api/v1/url/{shortUrl}`,
+                        url: `${req.protocol}://${req.headers.host}/api/v1/url/{shortUrl}`,
                         description: "delete 1 short url by shortUrl in parameter itself",
                         status: {
                             code: [200, 401, 404, 500],
                             cached: false,
                             middleware: true,
-                            needApiKey: true
+                            apiKeyRequired: true
                         },
                         parameter: {
                             name: "shortUrl",
                             type: "string",
-                            constLength: 7,
+                            fixLength: 7,
                             required: true
                         }
 
@@ -86,16 +86,16 @@ router.get("/",[fetchLimiter], (req, res) => {
                 refLink: [
                     {
                         method: "POST",
-                        url: `${req.protocol}://${req.hostname}/api/v1/request-api-key`,
+                        url: `${req.protocol}://${req.headers.host}/api/v1/request-api-key`,
                         description: "Requesting API Key represented by a encrypted tokens",
                         status: {
-                            code: [201, 400, 403, 500],
+                            code: [201, 400, 429, 500],
                             cached: false,
                             middleware: true,
-                            needApiKey: false
+                            apiKeyRequired: false
                         },
                         body: {
-                            fields: [{ name: "email", type: "string", maxLength: 255 }],
+                            fields: [{ name: "email", type: "string", minLength: 6 }],
                             required: true
                         }
                     },

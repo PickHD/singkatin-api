@@ -8,16 +8,15 @@ const verifyApiKey = async (req, res, next) => {
                 token: apiKey
             }
         });
-        if (apiKey === "" || apiKey === undefined) {
+        if (!apiKey) {
             res.statusCode = 400;
-            const badRequest = new Error("No Token Provided.");
-            return next(badRequest);
+            return next(new Error("No Token Provided."));
         }
-        if (getToken !== apiKey || !getToken) {
+        if (!getToken) {
             res.statusCode = 401;
-            const unauthorized = new Error("Key Invalid. Maybe Expired");
-            return next(unauthorized);
+            return next(new Error("Key Invalid. Maybe Expired"));
         }
+        next();
     } catch (e) {
         res.statusCode = 500;
         return next(e);

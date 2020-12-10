@@ -8,8 +8,11 @@ require("dotenv").config();
 const app = express();
 const port = process.env.PORT || 8080;
 const db = require("./models/index");
+const job = require("./helpers/scheduledDelToken.helper");
 
 const api = require("./routes/index.route");
+const errHandler = require("./middlewares/errHandler.middleware");
+const routeNotFound = require("./middlewares/routeNotFound.middleware");
 
 (async function setupAPI() {
     try {
@@ -19,7 +22,7 @@ const api = require("./routes/index.route");
                 include: [200],
             }
         }).middleware;
-        
+
         app.use(express.json());
         app.use(express.urlencoded({ extended: true }));
 
@@ -36,6 +39,10 @@ const api = require("./routes/index.route");
         }
 
         app.use("/", api);
+        app.use(routeNotFound);
+        app.use(errHandler);
+
+        job.start();
     } catch (e) {
         console.error(e);
     }

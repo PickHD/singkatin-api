@@ -17,7 +17,7 @@ module.exports = {
                 type: Sequelize.STRING,
                 allowNull: false,
             },
-            clicked: {
+            visited: {
                 type: Sequelize.INTEGER,
                 allowNull: false,
                 defaultValue: 0

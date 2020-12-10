@@ -10,13 +10,13 @@ const port = process.env.PORT || 8080;
 const db = require("./models/index");
 const job = require("./helpers/scheduledDelToken.helper");
 
-const api = require("./routes/index.route");
+const apiGateway = require("./routes/index.route");
 const errHandler = require("./middlewares/errHandler.middleware");
 const routeNotFound = require("./middlewares/routeNotFound.middleware");
 
 (async function setupAPI() {
     try {
-        let cache = apiCache.options({
+        const cache = apiCache.options({
             statusCodes: {
                 exclude: [203, 400, 401, 404, 429, 500, 501, 503],
                 include: [200],
@@ -30,7 +30,7 @@ const routeNotFound = require("./middlewares/routeNotFound.middleware");
         app.use(helmet());
 
         if (process.env.NODE_ENV === "production") {
-            app.use(morgan("short"));
+            app.use(morgan("tiny"));
             app.use(cache("15 min"));
             await db.sequelize.authenticate();
         } else {
@@ -38,7 +38,7 @@ const routeNotFound = require("./middlewares/routeNotFound.middleware");
             db.sequelize.sync({ force: true });
         }
 
-        app.use("/", api);
+        app.use("/", apiGateway);
         app.use(routeNotFound);
         app.use(errHandler);
 

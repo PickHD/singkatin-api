@@ -24,7 +24,7 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false,
             defaultValue:nanoid(7)
         },
-        clicked: {
+        visited: {
             type: DataTypes.INTEGER,
             allowNull: false,
             defaultValue: 0

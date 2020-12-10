@@ -7,7 +7,7 @@ const fetchLimiter = rateLimit({
 });
 const createLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 3, // start blocking after 3 requests
+    max: 5, // limit each IP to 5 requests per windowMs
     message: { success: false, err_code: 429, err_message: "Too many tokens/request created, please try again after an hour", stack: null }
 });
 

@@ -1,22 +1,34 @@
 "use strict";
+const { nanoid } = require("nanoid");
 const {
     Model
 } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
     class Shorts extends Model {
-    /**
-     * Helper method for defining associations.
-     * This method is not a part of Sequelize lifecycle.
-     * The `models/index` file will call this method automatically.
-     */
+        /**
+         * Helper method for defining associations.
+         * This method is not a part of Sequelize lifecycle.
+         * The `models/index` file will call this method automatically.
+         */
         static associate(models) {
             // define association here
         }
     }
     Shorts.init({
-        full_url: DataTypes.STRING,
-        short_url:DataTypes.STRING,
-        clicked:DataTypes.INTEGER
+        full_url: {
+            type: DataTypes.STRING,
+            allowNull: false
+        },
+        short_url: {
+            type: DataTypes.STRING,
+            allowNull: false,
+            defaultValue:nanoid(7)
+        },
+        clicked: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 0
+        },
     }, {
         sequelize,
         modelName: "Shorts",

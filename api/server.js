@@ -18,7 +18,7 @@ const routeNotFound = require("./middlewares/routeNotFound.middleware");
     try {
         let cache = apiCache.options({
             statusCodes: {
-                exclude: [201, 400, 403, 404, 401, 429, 500],
+                exclude: [203, 400, 401, 403, 404, 403, 429, 500, 501, 503],
                 include: [200],
             }
         }).middleware;

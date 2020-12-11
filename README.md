@@ -44,3 +44,6 @@ To undo :
 npm run undo_migrate
 ```
 
+Access GET ``` Endpoint to retrieve all general info about this API
+            /
+           ```

@@ -1,13 +1,24 @@
 const { Short } = require("../models");
+const { customAlphabet } = require("nanoid");
 const { validationResult } = require("express-validator");
+
+//!GENERATE CUSTOM ALPHABET NANOID 
+const customNanoId =customAlphabet("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ",10);
 
 exports.getAllUrl = async (req, res, next) => {
     try {
+        const { page } = req.query;
 
-        //TODO : Create Dynamic Query String For Filter & Searching Rows
-        //! const {} = req.query 
+        const perPage = 10;
+        const getPage = page || 1;
+        const resOffset = (perPage * getPage) - perPage;
 
-        const { count, rows } = await Short.findAndCountAll({ raw: true });
+        const { count, rows } = await Short.findAndCountAll({
+            attributes: ["full_url", "short_url", "visited"],
+            limit: perPage,
+            offset: resOffset,
+            order: [["createdAt", "ASC"]]
+        });
 
         return res.status(200).json({
             success: true,
@@ -33,6 +44,7 @@ exports.createShortUrlHandler = async (req, res, next) => {
         } else {
             const createShortUrl = await Short.create({
                 full_url: full_url,
+                short_url: customNanoId()
             });
             return res.status(201).json({
                 success: true,
@@ -109,9 +121,9 @@ exports.delOneShortUrlHandler = async (req, res, next) => {
                     }
                 });
                 return res.status(200).json({
-                    success:true,
-                    data:{
-                        msg:`Short URL ${shortUrl} was successfully deleted.`
+                    success: true,
+                    data: {
+                        msg: `Short URL ${shortUrl} was successfully deleted.`
                     }
                 });
             }

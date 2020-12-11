@@ -8,7 +8,7 @@
     "start": "node ./api/server.js",
     "lint": "eslint --fix ./api",
     "test": "mocha './test/**/*.test.js' --exit || true --timeout 10000 ",
-    "coverage":"nyc npm run test",
+    "coverage": "nyc npm run test",
     "migrate": "cd ./api && npx sequelize-cli db:migrate all",
     "undo_migrate": "cd ./api && npx sequelize-cli db:migrate:undo:all"
   },
@@ -34,6 +34,8 @@
     "morgan": "^1.10.0",
     "mysql2": "^2.2.5",
     "nanoid": "^3.1.20",
+    "pg": "^8.5.1",
+    "pg-hstore": "^2.3.3",
     "sequelize": "^6.3.5"
   },
   "devDependencies": {

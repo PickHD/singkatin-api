@@ -59,7 +59,7 @@ router.get("/", [fetchLimiter], async (req, res, next) => {
                             parameter: {
                                 name: "shortUrl",
                                 type: "string",
-                                fixLength: 7,
+                                fixLength: 10,
                                 apiKeyRequired: true
                             }
                         },
@@ -76,7 +76,7 @@ router.get("/", [fetchLimiter], async (req, res, next) => {
                             parameter: {
                                 name: "shortUrl",
                                 type: "string",
-                                fixLength: 7,
+                                fixLength: 10,
                                 required: true
                             }
 

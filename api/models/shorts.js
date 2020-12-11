@@ -1,5 +1,4 @@
 "use strict";
-const { nanoid } = require("nanoid");
 const {
     Model
 } = require("sequelize");
@@ -22,7 +21,6 @@ module.exports = (sequelize, DataTypes) => {
         short_url: {
             type: DataTypes.STRING,
             allowNull: false,
-            defaultValue:nanoid(7)
         },
         visited: {
             type: DataTypes.INTEGER,

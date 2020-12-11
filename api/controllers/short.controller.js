@@ -17,7 +17,8 @@ exports.getAllUrl = async (req, res, next) => {
             attributes: ["full_url", "short_url", "visited"],
             limit: perPage,
             offset: resOffset,
-            order: [["createdAt", "ASC"]]
+            order: [["createdAt", "ASC"]],
+            raw:true
         });
 
         return res.status(200).json({

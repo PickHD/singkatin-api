@@ -5,7 +5,7 @@
 ```
 npm install --save
 ```
-Following Script :
+Following Another Script :
 
 ### Lint
 
@@ -28,6 +28,8 @@ npm run coverage
 ```
 npm run dev
 ```
+Server will running on port : 8080
+
 ### Production Mode
 
 ```

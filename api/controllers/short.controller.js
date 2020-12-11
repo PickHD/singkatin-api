@@ -3,7 +3,7 @@ const { customAlphabet } = require("nanoid");
 const { validationResult } = require("express-validator");
 
 //!GENERATE CUSTOM ALPHABET NANOID 
-const customNanoId =customAlphabet("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ",10);
+const customNanoId = customAlphabet("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ", 10);
 
 exports.getAllUrl = async (req, res, next) => {
     try {
@@ -18,7 +18,7 @@ exports.getAllUrl = async (req, res, next) => {
             limit: perPage,
             offset: resOffset,
             order: [["createdAt", "ASC"]],
-            raw:true
+            raw: true
         });
 
         return res.status(200).json({
@@ -43,17 +43,28 @@ exports.createShortUrlHandler = async (req, res, next) => {
         if (!badReqError.isEmpty()) {
             return res.status(400).json({ validation_errors: badReqError.array() });
         } else {
-            const createShortUrl = await Short.create({
-                full_url: full_url,
-                short_url: customNanoId()
-            });
-            return res.status(201).json({
-                success: true,
-                data: {
-                    msg: "URL Shorted Successfully",
-                    shortUrlResult: createShortUrl.short_url
+            const checkFullUrl = await Short.findOne({
+                where: {
+                    full_url: full_url
                 }
             });
+            if (checkFullUrl) {
+                res.statusCode = 400;
+                return next(new Error("This URL already shorted before. check at retrieving all short URL's."));
+            } else {
+                const createShortUrl = await Short.create({
+                    full_url: full_url,
+                    short_url: customNanoId()
+                });
+                return res.status(201).json({
+                    success: true,
+                    data: {
+                        msg: "URL Shorted Successfully",
+                        shortUrlResult: createShortUrl.short_url
+                    }
+                });
+            }
+
         }
 
     } catch (e) {

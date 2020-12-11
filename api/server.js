@@ -6,7 +6,6 @@ const apiCache = require("apicache");
 require("dotenv").config();
 
 const app = express();
-const port = process.env.PORT || 8080;
 const db = require("./models/index");
 const job = require("./helpers/scheduledDelToken.helper");
 
@@ -49,4 +48,8 @@ const routeNotFound = require("./middlewares/routeNotFound.middleware");
 
 }());
 
-app.listen(port, () => console.log(`Server is Listening on Port :${port}`));
+const server = app.listen(process.env.PORT || 8080, () => {
+    //!GET DYNAMIC PORT 
+    let port = server.address().port;
+    console.log(`Server is running on port :${port}`);
+});

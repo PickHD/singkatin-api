@@ -5,25 +5,40 @@
 ```
 npm install --save
 ```
+Following Script :
 
-## Lint
+### Lint
 
 ```
 npm run lint
 ```
 
-## Test
+### Test
 
 ```
 npm run test
 ```
-## Test with reports
+### Test with reports
 ```
 npm run coverage
 ```
 
-## Development
+### Development Mode
 
 ```
 npm run dev
 ```
+### Production Mode
+
+```
+npm run start
+```
+Make sure to migrating table first. Following code :
+```
+npm run migrate
+```
+To undo :
+```
+npm run undo_migrate
+```
+

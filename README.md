@@ -17,12 +17,12 @@ Following Another Script :
 npm run lint
 ```
 
-### Test
+### Test ( soon !)
 
 ```
 npm run test
 ```
-### Test with reports
+### Test with reports ( soon !)
 ```
 npm run coverage
 ```

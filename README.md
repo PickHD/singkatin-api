@@ -48,6 +48,8 @@ To undo :
 npm run undo_migrate
 ```
 
-
 ## Access GET ``` / ```  Endpoint to retrieve all general info about this API.
+
+### Want to contribute?
+Mail me [taufikjanuar35@gmail.com](mailto:taufikjanuar35@gmail.com)
 

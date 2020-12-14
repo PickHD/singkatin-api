@@ -17,16 +17,6 @@ Following Another Script :
 npm run lint
 ```
 
-### Test ( soon !)
-
-```
-npm run test
-```
-### Test with reports ( soon !)
-```
-npm run coverage
-```
-
 ### Development Mode
 
 ```

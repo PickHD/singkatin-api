@@ -20,7 +20,7 @@ router.get("/", [fetchLimiter], async (req, res, next) => {
                     refLink: [
                         {
                             method: "GET",
-                            url: `${req.protocol}://${req.headers.host}/api/v1/url`,
+                            url: `${req.protocol}://${req.headers.host}/api/url`,
                             description: "Retrieve all url shortened",
                             status: {
                                 code: [200, 401, 429, 500],
@@ -32,7 +32,7 @@ router.get("/", [fetchLimiter], async (req, res, next) => {
                         },
                         {
                             method: "POST",
-                            url: `${req.protocol}://${req.headers.host}/api/v1/url`,
+                            url: `${req.protocol}://${req.headers.host}/api/url`,
                             description: "Create a url shortened",
                             status: {
                                 code: [201, 400, 401, 429, 500],
@@ -48,7 +48,7 @@ router.get("/", [fetchLimiter], async (req, res, next) => {
                         },
                         {
                             method: "GET",
-                            url: `${req.protocol}://${req.headers.host}/api/v1/url/{shortUrl}`,
+                            url: `${req.protocol}://${req.headers.host}/api/url/{shortUrl}`,
                             description: "Redirecting to real url selected by shortUrl in parameter itself",
                             status: {
                                 code: [200, 401, 404, 429, 500],
@@ -65,7 +65,7 @@ router.get("/", [fetchLimiter], async (req, res, next) => {
                         },
                         {
                             method: "DELETE",
-                            url: `${req.protocol}://${req.headers.host}/api/v1/url/{shortUrl}`,
+                            url: `${req.protocol}://${req.headers.host}/api/url/{shortUrl}`,
                             description: "delete 1 short url by shortUrl in parameter itself",
                             status: {
                                 code: [200, 401, 404, 500],
@@ -89,7 +89,7 @@ router.get("/", [fetchLimiter], async (req, res, next) => {
                     refLink: [
                         {
                             method: "POST",
-                            url: `${req.protocol}://${req.headers.host}/api/v1/request-api-key`,
+                            url: `${req.protocol}://${req.headers.host}/api/request-api-key`,
                             description: "Requesting API Key represented by a encrypted tokens",
                             status: {
                                 code: [201, 400, 429, 500],
@@ -119,7 +119,7 @@ router.get("/", [fetchLimiter], async (req, res, next) => {
 });
 
 //! V1 API NESTED ROUTES
-router.use("/api/v1/url", short);
-router.use("/api/v1/request-api-key", requester);
+router.use("/api/url", short);
+router.use("/api/request-api-key", requester);
 
 module.exports = router;

@@ -31,7 +31,7 @@
     "database": "singkatin_api_prod",
     "host": "127.0.0.1",
     "dialect": "mysql",
-    "use_env_variable": "PROD_DATABASE_URL",
+    "use_env_variable": "DATABASE_URL",
     "pool": {
       "max": 5,
       "min": 0,

@@ -1,7 +1,8 @@
-const crypt = require("crypto");
 const { validationResult } = require("express-validator");
 
-const { Token, Requester } = require("../models");
+const { Requester, Token } = require("../models");
+
+const { generateToken } = require("../helpers/queryFunction.helper");
 
 exports.createRequestApiKeyHandler = async (req, res, next) => {
     try {
@@ -17,25 +18,30 @@ exports.createRequestApiKeyHandler = async (req, res, next) => {
                     email: email
                 }
             });
+            //!if email existed in database , remove old token & create token again 
             if (checkExistingEmail) {
-                res.statusCode = 400;
-                return next(new Error("Email already in used, please to change your email."));
-            } else {
+                await Token.destroy({ where: { RequesterId: checkExistingEmail.id } });
 
-                const createRequester = await Requester.create({
-                    email: email
-                });
-
-                const genToken = await Token.create({
-                    token: crypt.randomBytes(23).toString("hex").toUpperCase(),
-                    RequesterId: createRequester.id
-                });
-
+                const genTokenExistingUser = await generateToken(checkExistingEmail);
                 return res.status(201).json({
                     success: true,
                     data: {
                         API_KEY_HEADER_NAME: "X-API-KEY",
-                        value: genToken.token
+                        value: genTokenExistingUser
+                    }
+                });
+            } else {
+                //! if not,create new token  
+                const createRequester = await Requester.create({
+                    email: email
+                });
+
+                const genNewToken = await generateToken(createRequester);
+                return res.status(201).json({
+                    success: true,
+                    data: {
+                        API_KEY_HEADER_NAME: "X-API-KEY",
+                        value: genNewToken
                     }
                 });
             }

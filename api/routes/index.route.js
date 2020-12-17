@@ -107,7 +107,7 @@ router.get("/", [fetchLimiter], async (req, res, next) => {
                 }
             ],
             status: {
-                total_shorted_url: countShortUrl
+                totalShortedUrl: countShortUrl
             }
 
         });

@@ -4,11 +4,11 @@
   "description": "Url Shortener API with Express.js",
   "main": "server.js",
   "scripts": {
-    "dev": "nodemon ./api/server.js",
-    "start": "node ./api/server.js",
-    "lint": "eslint --fix ./api",
-    "migrate": "cd ./api && npx sequelize-cli db:migrate all",
-    "undo_migrate": "cd ./api && npx sequelize-cli db:migrate:undo:all"
+    "dev": "nodemon ./src/server.js",
+    "start": "node ./src/server.js",
+    "lint": "eslint --fix ./src",
+    "migrate": "cd ./src && npx sequelize-cli db:migrate all",
+    "undo_migrate": "cd ./src && npx sequelize-cli db:migrate:undo:all"
   },
   "keywords": [
     "restful-api",
@@ -32,8 +32,6 @@
     "morgan": "^1.10.0",
     "mysql2": "^2.2.5",
     "nanoid": "^3.1.20",
-    "pg": "^8.5.1",
-    "pg-hstore": "^2.3.3",
     "sequelize": "^6.3.5"
   },
   "devDependencies": {

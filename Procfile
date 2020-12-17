@@ -1,1 +1,1 @@
-web : export NODE_ENV=production && cd ./api && npx sequelize-cli db:migrate all && cd .. && node ./api/server.js
+web : export NODE_ENV=production && cd ./src && npx sequelize-cli db:migrate all && cd .. && node ./src/server.js

@@ -2,7 +2,7 @@ const rateLimit = require("express-rate-limit");
 
 const fetchLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // limit each IP to 100 requests per windowMs
+    max: 30, // limit each IP to 30 requests per windowMs
     message: { success: false, err_code: 429, err_message: "Too many fetch requested, please try again after an 15 minutes", stack: null }
 });
 const createLimiter = rateLimit({

@@ -30,7 +30,13 @@
     "password": "reverseit40252",
     "database": "singkatin_api_prod",
     "host": "127.0.0.1",
-    "dialect": "mysql",
+    "dialect": "postgres",
+    "dialectOptions": {
+      "ssl": {
+        "require": true, 
+        "rejectUnauthorized": false
+      }
+    },
     "use_env_variable": "DATABASE_URL",
     "pool": {
       "max": 5,

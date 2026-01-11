@@ -1,11 +1,11 @@
 build:
-	docker-compose build
+	docker compose build
 run:
-	docker-compose up -d --build --force-recreate
+	docker compose up -d --build --force-recreate
 stop:
-	docker-compose down
+	docker compose down
 remove:
-	docker-compose down -v
+	docker compose down -v
 	
 .PHONY: build run stop remove
 

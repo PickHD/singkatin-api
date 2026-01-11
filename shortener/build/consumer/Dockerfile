@@ -12,7 +12,7 @@ RUN go mod download
 COPY ./shortener .
 
 # Build Go App
-RUN CGO_ENABLED=0 GOOS=linux go build -o shortener-service ./cmd/v1
+RUN CGO_ENABLED=0 GOOS=linux go build -o shortener-service ./cmd
 
 FROM alpine:3.11.3
 

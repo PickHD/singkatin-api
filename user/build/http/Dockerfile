@@ -12,7 +12,7 @@ RUN go mod download
 COPY ./user .
 
 # Build Go App
-RUN CGO_ENABLED=0 GOOS=linux go build -o user-service ./cmd/v1
+RUN CGO_ENABLED=0 GOOS=linux go build -o user-service ./cmd
 
 FROM alpine:3.11.3
 

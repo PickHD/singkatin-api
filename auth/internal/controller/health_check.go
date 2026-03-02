@@ -4,9 +4,10 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/PickHD/singkatin-revamp/auth/internal/config"
-	"github.com/PickHD/singkatin-revamp/auth/internal/helper"
-	"github.com/PickHD/singkatin-revamp/auth/internal/service"
+	"singkatin-api/auth/internal/config"
+	"singkatin-api/auth/internal/service"
+	"singkatin-api/auth/pkg/response"
+
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/otel/sdk/trace"
 )
@@ -17,18 +18,18 @@ type (
 		Check(ctx *gin.Context)
 	}
 
-	// HealthCheckControllerImpl is an app health check struct that consists of all the dependencies needed for health check controller
-	HealthCheckControllerImpl struct {
+	// healthCheckControllerImpl is an app health check struct that consists of all the dependencies needed for health check controller
+	healthCheckControllerImpl struct {
 		Context        context.Context
-		Config         *config.Configuration
+		Config         *config.Config
 		Tracer         *trace.TracerProvider
 		HealthCheckSvc service.HealthCheckService
 	}
 )
 
 // NewHealthCheckController return new instances health check controller
-func NewHealthCheckController(ctx context.Context, config *config.Configuration, tracer *trace.TracerProvider, healthCheckSvc service.HealthCheckService) *HealthCheckControllerImpl {
-	return &HealthCheckControllerImpl{
+func NewHealthCheckController(ctx context.Context, config *config.Config, tracer *trace.TracerProvider, healthCheckSvc service.HealthCheckService) HealthCheckController {
+	return &healthCheckControllerImpl{
 		Context:        ctx,
 		Config:         config,
 		Tracer:         tracer,
@@ -36,23 +37,15 @@ func NewHealthCheckController(ctx context.Context, config *config.Configuration,
 	}
 }
 
-// Check godoc
-// @Summary      Checking Health Services
-// @Tags         Health Check
-// @Accept       json
-// @Produce      json
-// @Success      200  {object}  helper.BaseResponse
-// @Failure      500  {object}  helper.BaseResponse
-// @Router       /health-check [get]
-func (hc *HealthCheckControllerImpl) Check(ctx *gin.Context) {
-	tr := hc.Tracer.Tracer("Auth-Check Controller")
+func (c *healthCheckControllerImpl) Check(ctx *gin.Context) {
+	tr := c.Tracer.Tracer("Auth-Check Controller")
 	_, span := tr.Start(ctx, "Start Check")
 	defer span.End()
 
-	ok, err := hc.HealthCheckSvc.Check()
+	ok, err := c.HealthCheckSvc.Check()
 	if err != nil || !ok {
-		helper.NewResponses[any](ctx, http.StatusInternalServerError, "Not OK", ok, err, nil)
+		response.NewResponses[any](ctx, http.StatusInternalServerError, "Not OK", ok, err, nil)
 	}
 
-	helper.NewResponses[any](ctx, http.StatusOK, "OK", ok, nil, nil)
+	response.NewResponses[any](ctx, http.StatusOK, "OK", ok, nil, nil)
 }

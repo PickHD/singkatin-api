@@ -3,8 +3,9 @@ package service
 import (
 	"context"
 
-	"github.com/PickHD/singkatin-revamp/auth/internal/config"
-	"github.com/PickHD/singkatin-revamp/auth/internal/repository"
+	"singkatin-api/auth/internal/config"
+	"singkatin-api/auth/internal/repository"
+
 	"go.opentelemetry.io/otel/sdk/trace"
 )
 
@@ -14,18 +15,18 @@ type (
 		Check() (bool, error)
 	}
 
-	// HealthCheckServiceImpl is an app health check struct that consists of all the dependencies needed for health check service
-	HealthCheckServiceImpl struct {
+	// healthCheckServiceImpl is an app health check struct that consists of all the dependencies needed for health check service
+	healthCheckServiceImpl struct {
 		Context         context.Context
-		Config          *config.Configuration
+		Config          *config.Config
 		Tracer          *trace.TracerProvider
 		HealthCheckRepo repository.HealthCheckRepository
 	}
 )
 
 // NewHealthCheckService return new instances health check service
-func NewHealthCheckService(ctx context.Context, config *config.Configuration, tracer *trace.TracerProvider, healthCheckRepo repository.HealthCheckRepository) *HealthCheckServiceImpl {
-	return &HealthCheckServiceImpl{
+func NewHealthCheckService(ctx context.Context, config *config.Config, tracer *trace.TracerProvider, healthCheckRepo repository.HealthCheckRepository) HealthCheckService {
+	return &healthCheckServiceImpl{
 		Context:         ctx,
 		Config:          config,
 		Tracer:          tracer,
@@ -33,10 +34,10 @@ func NewHealthCheckService(ctx context.Context, config *config.Configuration, tr
 	}
 }
 
-func (hs *HealthCheckServiceImpl) Check() (bool, error) {
-	tr := hs.Tracer.Tracer("Auth-Check Service")
-	_, span := tr.Start(hs.Context, "Start Check")
+func (s *healthCheckServiceImpl) Check() (bool, error) {
+	tr := s.Tracer.Tracer("Auth-Check Service")
+	_, span := tr.Start(s.Context, "Start Check")
 	defer span.End()
 
-	return hs.HealthCheckRepo.Check()
+	return s.HealthCheckRepo.Check()
 }

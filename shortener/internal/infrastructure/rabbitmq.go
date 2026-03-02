@@ -1,19 +1,66 @@
 package infrastructure
 
 import (
+	"context"
 	"fmt"
+	"singkatin-api/shortener/internal/config"
+	"singkatin-api/shortener/internal/controller"
+	shortenerpb "singkatin-api/shortener/pkg/api/v1/proto/shortener"
+	"singkatin-api/shortener/pkg/logger"
 
-	"github.com/PickHD/singkatin-revamp/shortener/internal/application"
-	shortenerpb "github.com/PickHD/singkatin-revamp/shortener/pkg/api/v1/proto/shortener"
+	"github.com/streadway/amqp"
 	"google.golang.org/protobuf/proto"
 )
 
-// ConsumeMessages generic function to consume message from defined param queues
-func ConsumeMessages(app *application.App, queueName string) {
-	dep := application.SetupDependencyInjection(app)
+type RabbitMQConnectionProvider struct {
+	client *amqp.Channel
+}
 
+func NewRabbitMQConnection(ctx context.Context, cfg *config.Configuration) *RabbitMQConnectionProvider {
+	amqpConn, err := amqp.Dial(cfg.RabbitMQ.ConnURL)
+	if err != nil {
+		logger.Errorf("failed dial RabbitMQ, error : %v", err)
+		return nil
+	}
+
+	amqpClient, err := amqpConn.Channel()
+	if err != nil {
+		logger.Errorf("failed open RabbitMQ Channels, error : %v", err)
+		return nil
+	}
+
+	queues := []string{cfg.RabbitMQ.QueueCreateShortener, cfg.RabbitMQ.QueueUpdateVisitor, cfg.RabbitMQ.QueueUpdateShortener, cfg.RabbitMQ.QueueDeleteShortener}
+
+	for _, q := range queues {
+		_, err = amqpClient.QueueDeclare(
+			q,     // queue name
+			true,  // durable
+			false, // auto delete
+			false, // exclusive
+			false, // no wait
+			nil,   // arguments
+		)
+		if err != nil {
+			logger.Errorf("failed queue declare Channels, error : %v", err)
+			return nil
+		}
+	}
+
+	return &RabbitMQConnectionProvider{client: amqpClient}
+}
+
+func (r *RabbitMQConnectionProvider) GetClient() *amqp.Channel {
+	return r.client
+}
+
+func (r *RabbitMQConnectionProvider) Close() error {
+	return r.client.Close()
+}
+
+// ConsumeMessages generic function to consume message from defined param queues
+func (r *RabbitMQConnectionProvider) ConsumeMessages(ctx context.Context, cfg *config.Configuration, shortController controller.ShortController, queueName string) {
 	// Subscribing to queues for getting messages.
-	messages, err := app.RabbitMQ.Consume(
+	messages, err := r.client.Consume(
 		queueName, // queue name
 		"",        // consumer
 		true,      // auto-ack
@@ -23,78 +70,78 @@ func ConsumeMessages(app *application.App, queueName string) {
 		nil,       // arguments
 	)
 	if err != nil {
-		app.Logger.Error("Failed consume message in queue", queueName)
+		logger.Errorf("Failed consume message in queue %s, %v", queueName, err)
 	}
 
-	app.Logger.Info("Waiting Message in Queues ", queueName, ".....")
+	logger.Infof("Waiting Message in Queues %s.....", queueName)
 
 	go func() {
 		for msg := range messages {
 			switch queueName {
-			case app.Config.RabbitMQ.QueueCreateShortener:
+			case cfg.RabbitMQ.QueueCreateShortener:
 				req := &shortenerpb.CreateShortenerMessage{}
 
 				err := proto.Unmarshal(msg.Body, req)
 				if err != nil {
-					app.Logger.Error("Unmarshal proto CreateShortenerMessage ERROR, ", err)
+					logger.Errorf("Unmarshal proto CreateShortenerMessage ERROR, %v", err)
 				}
 
-				app.Logger.Info(fmt.Sprintf("[%s] Success Consume Message :", queueName), req)
+				logger.Infof("[%s] Success Consume Message : %v", queueName, req)
 
-				err = dep.ShortController.ProcessCreateShortUser(app.Context, req)
+				err = shortController.ProcessCreateShortUser(ctx, req)
 				if err != nil {
-					app.Logger.Error("ProcessCreateShortUser ERROR, ", err)
+					logger.Errorf("ProcessCreateShortUser ERROR, %v", err)
 				}
 
-				app.Logger.Info(fmt.Sprintf("[%s] Success Process Message :", queueName), req)
-			case app.Config.RabbitMQ.QueueUpdateVisitor:
+				logger.Infof("[%s] Success Process Message : %v", queueName, req)
+			case cfg.RabbitMQ.QueueUpdateVisitor:
 				req := &shortenerpb.UpdateVisitorCountMessage{}
 
 				err := proto.Unmarshal(msg.Body, req)
 				if err != nil {
-					app.Logger.Error("Unmarshal proto UpdateVisitorCountMessage ERROR, ", err)
+					logger.Errorf("Unmarshal proto UpdateVisitorCountMessage ERROR, %v", err)
 				}
 
-				app.Logger.Info(fmt.Sprintf("[%s] Success Consume Message :", queueName), req)
+				logger.Infof("[%s] Success Consume Message : %v", queueName, req)
 
-				err = dep.ShortController.ProcessUpdateVisitorCount(app.Context, req)
+				err = shortController.ProcessUpdateVisitorCount(ctx, req)
 				if err != nil {
-					app.Logger.Error("ProcessUpdateVisitorCount ERROR, ", err)
+					logger.Errorf("ProcessUpdateVisitorCount ERROR, %v", err)
 				}
 
-				app.Logger.Info(fmt.Sprintf("[%s] Success Process Message :", queueName), req)
-			case app.Config.RabbitMQ.QueueUpdateShortener:
+				logger.Infof("[%s] Success Process Message : %v", queueName, req)
+			case cfg.RabbitMQ.QueueUpdateShortener:
 				req := &shortenerpb.UpdateShortenerMessage{}
 
 				err := proto.Unmarshal(msg.Body, req)
 				if err != nil {
-					app.Logger.Error("Unmarshal proto UpdateShortenerMessage ERROR, ", err)
+					logger.Errorf("Unmarshal proto UpdateShortenerMessage ERROR, %v", err)
 				}
 
-				app.Logger.Info(fmt.Sprintf("[%s] Success Consume Message :", queueName), req)
+				logger.Infof("[%s] Success Consume Message : %v", queueName, req)
 
-				err = dep.ShortController.ProcessUpdateShortUser(app.Context, req)
+				err = shortController.ProcessUpdateShortUser(ctx, req)
 				if err != nil {
-					app.Logger.Error("ProcessUpdateShortUser ERROR, ", err)
+					logger.Errorf("ProcessUpdateShortUser ERROR, %v", err)
 				}
 
-				app.Logger.Info(fmt.Sprintf("[%s] Success Process Message :", queueName), req)
-			case app.Config.RabbitMQ.QueueDeleteShortener:
+				logger.Info(fmt.Sprintf("[%s] Success Process Message :", queueName), req)
+			case cfg.RabbitMQ.QueueDeleteShortener:
 				req := &shortenerpb.DeleteShortenerMessage{}
 
 				err := proto.Unmarshal(msg.Body, req)
 				if err != nil {
-					app.Logger.Error("Unmarshal proto DeleteShortenerMessage ERROR, ", err)
+					logger.Errorf("Unmarshal proto DeleteShortenerMessage ERROR, %v", err)
 				}
 
-				app.Logger.Info(fmt.Sprintf("[%s] Success Consume Message :", queueName), req)
+				logger.Infof("[%s] Success Consume Message : %v", queueName, req)
 
-				err = dep.ShortController.ProcessDeleteShortUser(app.Context, req)
+				err = shortController.ProcessDeleteShortUser(ctx, req)
 				if err != nil {
-					app.Logger.Error("ProcessDeleteShortUser ERROR, ", err)
+					logger.Errorf("ProcessDeleteShortUser ERROR, %v", err)
 				}
 
-				app.Logger.Info(fmt.Sprintf("[%s] Success Process Message :", queueName), req)
+				logger.Infof("[%s] Success Process Message : %v", queueName, req)
 			}
 		}
 	}()

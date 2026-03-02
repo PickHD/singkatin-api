@@ -5,13 +5,13 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/PickHD/singkatin-revamp/shortener/internal/config"
-	"github.com/PickHD/singkatin-revamp/shortener/internal/helper"
-	"github.com/PickHD/singkatin-revamp/shortener/internal/model"
-	"github.com/PickHD/singkatin-revamp/shortener/internal/service"
-	shortenerpb "github.com/PickHD/singkatin-revamp/shortener/pkg/api/v1/proto/shortener"
+	"singkatin-api/shortener/internal/config"
+	"singkatin-api/shortener/internal/model"
+	"singkatin-api/shortener/internal/service"
+	shortenerpb "singkatin-api/shortener/pkg/api/v1/proto/shortener"
+	"singkatin-api/shortener/pkg/response"
+
 	"github.com/labstack/echo/v4"
-	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel/sdk/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -37,7 +37,6 @@ type (
 	ShortControllerImpl struct {
 		Context  context.Context
 		Config   *config.Configuration
-		Logger   *logrus.Logger
 		Tracer   *trace.TracerProvider
 		ShortSvc service.ShortService
 		shortenerpb.UnimplementedShortenerServiceServer
@@ -45,11 +44,10 @@ type (
 )
 
 // NewShortController return new instances short controller
-func NewShortController(ctx context.Context, config *config.Configuration, logger *logrus.Logger, tracer *trace.TracerProvider, shortSvc service.ShortService) *ShortControllerImpl {
+func NewShortController(ctx context.Context, config *config.Configuration, tracer *trace.TracerProvider, shortSvc service.ShortService) *ShortControllerImpl {
 	return &ShortControllerImpl{
 		Context:  ctx,
 		Config:   config,
-		Logger:   logger,
 		Tracer:   tracer,
 		ShortSvc: shortSvc,
 	}
@@ -85,17 +83,6 @@ func (sc *ShortControllerImpl) GetListShortenerByUserID(ctx context.Context, req
 	}, nil
 }
 
-// Check godoc
-// @Summary      Click Shorteners URL
-// @Tags         Shortener
-// @Accept       json
-// @Produce      json
-// @Param        short_url   path string  true  "short urls"
-// @Success      301  {object}  helper.BaseResponse
-// @Failure      400  {object}  helper.BaseResponse
-// @Failure      404  {object}  helper.BaseResponse
-// @Failure      500  {object}  helper.BaseResponse
-// @Router       /{short_url} [get]
 func (sc *ShortControllerImpl) ClickShortener(ctx echo.Context) error {
 	tr := sc.Tracer.Tracer("Shortener-ClickShortener Controller")
 	_, span := tr.Start(sc.Context, "Start ClickShortener")
@@ -104,14 +91,14 @@ func (sc *ShortControllerImpl) ClickShortener(ctx echo.Context) error {
 	data, err := sc.ShortSvc.ClickShort(ctx.Param("short_url"))
 	if err != nil {
 		if strings.Contains(err.Error(), string(model.Validation)) {
-			return helper.NewResponses[any](ctx, http.StatusBadRequest, err.Error(), ctx.Param("short_url"), err, nil)
+			return response.NewResponses[any](ctx, http.StatusBadRequest, err.Error(), ctx.Param("short_url"), err, nil)
 		}
 
 		if strings.Contains(err.Error(), string(model.NotFound)) {
-			return helper.NewResponses[any](ctx, http.StatusNotFound, err.Error(), ctx.Param("short_url"), err, nil)
+			return response.NewResponses[any](ctx, http.StatusNotFound, err.Error(), ctx.Param("short_url"), err, nil)
 		}
 
-		return helper.NewResponses[any](ctx, http.StatusInternalServerError, "failed click shortener", ctx.Param("short_url"), err, nil)
+		return response.NewResponses[any](ctx, http.StatusInternalServerError, "failed click shortener", ctx.Param("short_url"), err, nil)
 	}
 
 	return ctx.Redirect(http.StatusTemporaryRedirect, data.FullURL)

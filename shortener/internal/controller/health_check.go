@@ -4,9 +4,10 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/PickHD/singkatin-revamp/shortener/internal/config"
-	"github.com/PickHD/singkatin-revamp/shortener/internal/helper"
-	"github.com/PickHD/singkatin-revamp/shortener/internal/service"
+	"singkatin-api/shortener/internal/config"
+	"singkatin-api/shortener/internal/service"
+	"singkatin-api/shortener/pkg/response"
+
 	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/otel/sdk/trace"
 )
@@ -51,8 +52,8 @@ func (hc *HealthCheckControllerImpl) Check(ctx echo.Context) error {
 
 	ok, err := hc.HealthCheckSvc.Check()
 	if err != nil || !ok {
-		return helper.NewResponses[any](ctx, http.StatusInternalServerError, "not OK", ok, err, nil)
+		return response.NewResponses[any](ctx, http.StatusInternalServerError, "not OK", ok, err, nil)
 	}
 
-	return helper.NewResponses[any](ctx, http.StatusOK, "OK", ok, nil, nil)
+	return response.NewResponses[any](ctx, http.StatusOK, "OK", ok, nil, nil)
 }

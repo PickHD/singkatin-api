@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package api.v1.proto.shortener;
 
-option go_package = "github.com/PickHD/singkatin-revamp/shortener/pkg/api/v1/proto/shortener;shortenerpb";
+option go_package = "singkatin-api/shortener/pkg/api/v1/proto/shortener;shortenerpb";
 
 message Shortener {
     string id = 1;

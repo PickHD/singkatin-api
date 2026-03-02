@@ -1,14 +1,12 @@
-package helper
+package response
 
-import (
-	"github.com/labstack/echo/v4"
-)
+import "github.com/labstack/echo/v4"
 
 type (
 	BaseResponse struct {
 		Messages string      `json:"messages"`
 		Data     interface{} `json:"data"`
-		Error    error       `json:"error"`
+		Error    error       `json:"error,omitempty"`
 		Meta     *Meta       `json:"meta,omitempty"`
 	}
 
@@ -28,7 +26,6 @@ func NewResponses[T any](ctx echo.Context, statusCode int, message string, data 
 			Error:    nil,
 			Meta:     meta,
 		})
-
 	}
 
 	return ctx.JSON(statusCode, &BaseResponse{
@@ -38,6 +35,3 @@ func NewResponses[T any](ctx echo.Context, statusCode int, message string, data 
 		Meta:     nil,
 	})
 }
-
-// OptionsHandler will handing preflight requests
-func OptionsHandler(ctx echo.Context) error { return nil }

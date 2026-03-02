@@ -7,13 +7,15 @@ import (
 	"io"
 	"net/url"
 
-	"github.com/PickHD/singkatin-revamp/user/internal/config"
-	"github.com/PickHD/singkatin-revamp/user/internal/helper"
-	"github.com/PickHD/singkatin-revamp/user/internal/model"
-	"github.com/PickHD/singkatin-revamp/user/internal/repository"
-	shortenerpb "github.com/PickHD/singkatin-revamp/user/pkg/api/v1/proto/shortener"
+	"singkatin-api/user/pkg/logger"
+	"singkatin-api/user/pkg/utils"
+
+	"singkatin-api/user/internal/config"
+	"singkatin-api/user/internal/model"
+	"singkatin-api/user/internal/repository"
+	shortenerpb "singkatin-api/user/pkg/api/v1/proto/shortener"
+
 	"github.com/gofiber/fiber/v2"
-	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel/sdk/trace"
 )
 
@@ -29,11 +31,10 @@ type (
 		DeleteUserShorts(shortID string) (*model.ShortUserResponse, error)
 	}
 
-	// UserServiceImpl is an app user struct that consists of all the dependencies needed for user service
-	UserServiceImpl struct {
+	// userServiceImpl is an app user struct that consists of all the dependencies needed for user service
+	userServiceImpl struct {
 		Context      context.Context
-		Config       *config.Configuration
-		Logger       *logrus.Logger
+		Config       *config.Config
 		Tracer       *trace.TracerProvider
 		UserRepo     repository.UserRepository
 		ShortClients shortenerpb.ShortenerServiceClient
@@ -41,34 +42,33 @@ type (
 )
 
 // NewUserService return new instances user service
-func NewUserService(ctx context.Context, config *config.Configuration, logger *logrus.Logger, tracer *trace.TracerProvider, userRepo repository.UserRepository, shortClients shortenerpb.ShortenerServiceClient) *UserServiceImpl {
-	return &UserServiceImpl{
+func NewUserService(ctx context.Context, config *config.Config, tracer *trace.TracerProvider, userRepo repository.UserRepository, shortClients shortenerpb.ShortenerServiceClient) UserService {
+	return &userServiceImpl{
 		Context:      ctx,
 		Config:       config,
-		Logger:       logger,
 		Tracer:       tracer,
 		UserRepo:     userRepo,
 		ShortClients: shortClients,
 	}
 }
 
-func (us *UserServiceImpl) GetUserDetail(email string) (*model.User, error) {
-	tr := us.Tracer.Tracer("User-GetUserDetail Service")
-	_, span := tr.Start(us.Context, "Start GetUserDetail")
+func (s *userServiceImpl) GetUserDetail(email string) (*model.User, error) {
+	tr := s.Tracer.Tracer("User-GetUserDetail Service")
+	_, span := tr.Start(s.Context, "Start GetUserDetail")
 	defer span.End()
 
-	return us.UserRepo.FindByEmail(us.Context, email)
+	return s.UserRepo.FindByEmail(s.Context, email)
 }
 
-func (us *UserServiceImpl) GetUserShorts(userID string) ([]model.UserShorts, error) {
-	tr := us.Tracer.Tracer("User-GetUserShorts Service")
-	_, span := tr.Start(us.Context, "Start GetUserShorts")
+func (s *userServiceImpl) GetUserShorts(userID string) ([]model.UserShorts, error) {
+	tr := s.Tracer.Tracer("User-GetUserShorts Service")
+	_, span := tr.Start(s.Context, "Start GetUserShorts")
 	defer span.End()
 
-	data, err := us.ShortClients.GetListShortenerByUserID(us.Context, &shortenerpb.ListShortenerRequest{
+	data, err := s.ShortClients.GetListShortenerByUserID(s.Context, &shortenerpb.ListShortenerRequest{
 		UserId: userID})
 	if err != nil {
-		us.Logger.Error("UserServiceImpl.GetUserShorts ShortClients ERROR, ", err)
+		logger.Errorf("UserServiceImpl.GetUserShorts ShortClients ERROR, %v", err)
 		return nil, err
 	}
 
@@ -90,31 +90,31 @@ func (us *UserServiceImpl) GetUserShorts(userID string) ([]model.UserShorts, err
 	return shorteners, nil
 }
 
-func (us *UserServiceImpl) GenerateUserShorts(userID string, req *model.ShortUserRequest) (*model.ShortUserResponse, error) {
-	tr := us.Tracer.Tracer("User-GenerateUserShorts Service")
-	_, span := tr.Start(us.Context, "Start GenerateUserShorts")
+func (s *userServiceImpl) GenerateUserShorts(userID string, req *model.ShortUserRequest) (*model.ShortUserResponse, error) {
+	tr := s.Tracer.Tracer("User-GenerateUserShorts Service")
+	_, span := tr.Start(s.Context, "Start GenerateUserShorts")
 	defer span.End()
 
 	msg := model.GenerateShortUserMessage{
 		FullURL:  req.FullURL,
 		UserID:   userID,
-		ShortURL: helper.RandomStringBytesMaskImprSrcSB(8),
+		ShortURL: utils.RandomStringBytesMaskImprSrcSB(8),
 	}
 
-	err := us.UserRepo.PublishCreateUserShortener(us.Context, &msg)
+	err := s.UserRepo.PublishCreateUserShortener(s.Context, &msg)
 	if err != nil {
 		return nil, err
 	}
 
 	return &model.ShortUserResponse{
-		ShortURL: fmt.Sprintf("%s/%s", us.Config.HttpService.ShortenerBaseAPIURL, msg.ShortURL),
+		ShortURL: fmt.Sprintf("%s/%s", s.Config.HttpService.ShortenerBaseAPIURL, msg.ShortURL),
 		Method:   "GET",
 	}, nil
 }
 
-func (us *UserServiceImpl) UpdateUserProfile(userID string, req *model.EditProfileRequest) error {
-	tr := us.Tracer.Tracer("User-UpdateUserProfile Service")
-	_, span := tr.Start(us.Context, "Start UpdateUserProfile")
+func (s *userServiceImpl) UpdateUserProfile(userID string, req *model.EditProfileRequest) error {
+	tr := s.Tracer.Tracer("User-UpdateUserProfile Service")
+	_, span := tr.Start(s.Context, "Start UpdateUserProfile")
 	defer span.End()
 
 	if req.FullName == "" {
@@ -125,7 +125,7 @@ func (us *UserServiceImpl) UpdateUserProfile(userID string, req *model.EditProfi
 		return model.NewError(model.Validation, "Full Name must more than 3")
 	}
 
-	err := us.UserRepo.UpdateProfileByID(us.Context, userID, req)
+	err := s.UserRepo.UpdateProfileByID(s.Context, userID, req)
 	if err != nil {
 		return err
 	}
@@ -133,9 +133,9 @@ func (us *UserServiceImpl) UpdateUserProfile(userID string, req *model.EditProfi
 	return nil
 }
 
-func (us *UserServiceImpl) UploadUserAvatar(ctx *fiber.Ctx, userID string) (*model.UploadAvatarResponse, error) {
-	tr := us.Tracer.Tracer("User-UploadUserAvatar Service")
-	_, span := tr.Start(us.Context, "Start UploadUserAvatar")
+func (s *userServiceImpl) UploadUserAvatar(ctx *fiber.Ctx, userID string) (*model.UploadAvatarResponse, error) {
+	tr := s.Tracer.Tracer("User-UploadUserAvatar Service")
+	_, span := tr.Start(s.Context, "Start UploadUserAvatar")
 	defer span.End()
 
 	file, err := ctx.FormFile("file")
@@ -166,7 +166,7 @@ func (us *UserServiceImpl) UploadUserAvatar(ctx *fiber.Ctx, userID string) (*mod
 	}
 
 	// publish to queue async
-	err = us.UserRepo.PublishUploadAvatarUser(us.Context, &model.UploadAvatarRequest{
+	err = s.UserRepo.PublishUploadAvatarUser(s.Context, &model.UploadAvatarRequest{
 		FileName:    fileName,
 		ContentType: contentType,
 		Avatars:     buf.Bytes(),
@@ -177,11 +177,11 @@ func (us *UserServiceImpl) UploadUserAvatar(ctx *fiber.Ctx, userID string) (*mod
 
 	fileUrl := url.URL{
 		Scheme: "http",
-		Path:   fmt.Sprintf("%s/%s/%s", us.Config.MinIO.Endpoint, us.Config.MinIO.Bucket, fileName),
+		Path:   fmt.Sprintf("%s/%s/%s", s.Config.MinIO.Endpoint, s.Config.MinIO.Bucket, fileName),
 	}
 
 	// update avatar_url users to db
-	err = us.UserRepo.UpdateAvatarUserByID(us.Context, fileUrl.String(), userID)
+	err = s.UserRepo.UpdateAvatarUserByID(s.Context, fileUrl.String(), userID)
 	if err != nil {
 		return nil, err
 	}
@@ -191,12 +191,12 @@ func (us *UserServiceImpl) UploadUserAvatar(ctx *fiber.Ctx, userID string) (*mod
 	}, nil
 }
 
-func (us *UserServiceImpl) UpdateUserShorts(shortID string, req *model.ShortUserRequest) (*model.ShortUserResponse, error) {
-	tr := us.Tracer.Tracer("User-UpdateUserShorts Service")
-	_, span := tr.Start(us.Context, "Start UpdateUserShorts")
+func (s *userServiceImpl) UpdateUserShorts(shortID string, req *model.ShortUserRequest) (*model.ShortUserResponse, error) {
+	tr := s.Tracer.Tracer("User-UpdateUserShorts Service")
+	_, span := tr.Start(s.Context, "Start UpdateUserShorts")
 	defer span.End()
 
-	err := us.UserRepo.PublishUpdateUserShortener(us.Context, shortID, req)
+	err := s.UserRepo.PublishUpdateUserShortener(s.Context, shortID, req)
 	if err != nil {
 		return nil, err
 	}
@@ -204,12 +204,12 @@ func (us *UserServiceImpl) UpdateUserShorts(shortID string, req *model.ShortUser
 	return &model.ShortUserResponse{}, nil
 }
 
-func (us *UserServiceImpl) DeleteUserShorts(shortID string) (*model.ShortUserResponse, error) {
-	tr := us.Tracer.Tracer("User-DeleteUserShorts Service")
-	_, span := tr.Start(us.Context, "Start DeleteUserShorts")
+func (s *userServiceImpl) DeleteUserShorts(shortID string) (*model.ShortUserResponse, error) {
+	tr := s.Tracer.Tracer("User-DeleteUserShorts Service")
+	_, span := tr.Start(s.Context, "Start DeleteUserShorts")
 	defer span.End()
 
-	err := us.UserRepo.PublishDeleteUserShortener(us.Context, shortID)
+	err := s.UserRepo.PublishDeleteUserShortener(s.Context, shortID)
 	if err != nil {
 		return nil, err
 	}

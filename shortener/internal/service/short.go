@@ -5,11 +5,12 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/PickHD/singkatin-revamp/shortener/internal/config"
-	"github.com/PickHD/singkatin-revamp/shortener/internal/model"
-	"github.com/PickHD/singkatin-revamp/shortener/internal/repository"
+	"singkatin-api/shortener/internal/config"
+	"singkatin-api/shortener/internal/model"
+	"singkatin-api/shortener/internal/repository"
+	"singkatin-api/shortener/pkg/logger"
+
 	"github.com/redis/go-redis/v9"
-	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel/sdk/trace"
 )
 
@@ -24,33 +25,31 @@ type (
 		DeleteShort(ctx context.Context, req *model.DeleteShortRequest) error
 	}
 
-	// ShortServiceImpl is an app short struct that consists of all the dependencies needed for short repository
-	ShortServiceImpl struct {
+	// shortServiceImpl is an app short struct that consists of all the dependencies needed for short repository
+	shortServiceImpl struct {
 		Context   context.Context
 		Config    *config.Configuration
-		Logger    *logrus.Logger
 		Tracer    *trace.TracerProvider
 		ShortRepo repository.ShortRepository
 	}
 )
 
 // NewShortService return new instances short service
-func NewShortService(ctx context.Context, config *config.Configuration, logger *logrus.Logger, tracer *trace.TracerProvider, shortRepo repository.ShortRepository) *ShortServiceImpl {
-	return &ShortServiceImpl{
+func NewShortService(ctx context.Context, config *config.Configuration, tracer *trace.TracerProvider, shortRepo repository.ShortRepository) ShortService {
+	return &shortServiceImpl{
 		Context:   ctx,
 		Config:    config,
-		Logger:    logger,
 		Tracer:    tracer,
 		ShortRepo: shortRepo,
 	}
 }
 
-func (ss *ShortServiceImpl) GetListShortenerByUserID(ctx context.Context, userID string) ([]model.Short, error) {
-	tr := ss.Tracer.Tracer("Shortener-GetListShortenerByUserID Service")
+func (s *shortServiceImpl) GetListShortenerByUserID(ctx context.Context, userID string) ([]model.Short, error) {
+	tr := s.Tracer.Tracer("Shortener-GetListShortenerByUserID Service")
 	ctx, span := tr.Start(ctx, "Start GetListShortenerByUserID")
 	defer span.End()
 
-	data, err := ss.ShortRepo.GetListShortenerByUserID(ctx, userID)
+	data, err := s.ShortRepo.GetListShortenerByUserID(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -58,55 +57,55 @@ func (ss *ShortServiceImpl) GetListShortenerByUserID(ctx context.Context, userID
 	return data, nil
 }
 
-func (ss *ShortServiceImpl) CreateShort(ctx context.Context, req *model.CreateShortRequest) error {
-	tr := ss.Tracer.Tracer("Shortener-CreateShort Service")
+func (s *shortServiceImpl) CreateShort(ctx context.Context, req *model.CreateShortRequest) error {
+	tr := s.Tracer.Tracer("Shortener-CreateShort Service")
 	ctx, span := tr.Start(ctx, "Start CreateShort")
 	defer span.End()
 
-	err := ss.validateCreateShort(req)
+	err := s.validateCreateShort(req)
 	if err != nil {
 		return err
 	}
 
-	return ss.ShortRepo.Create(ctx, &model.Short{
+	return s.ShortRepo.Create(ctx, &model.Short{
 		FullURL:  req.FullURL,
 		ShortURL: req.ShortURL,
 		UserID:   req.UserID,
 	})
 }
 
-func (ss *ShortServiceImpl) ClickShort(shortURL string) (*model.ClickShortResponse, error) {
+func (s *shortServiceImpl) ClickShort(shortURL string) (*model.ClickShortResponse, error) {
 	var (
-		redisTTLDuration = time.Minute * time.Duration(ss.Config.Redis.TTL)
+		redisTTLDuration = time.Minute * time.Duration(s.Config.Redis.TTL)
 	)
 
-	tr := ss.Tracer.Tracer("Shortener-ClickShort Service")
-	ctx, span := tr.Start(ss.Context, "Start ClickShort")
+	tr := s.Tracer.Tracer("Shortener-ClickShort Service")
+	ctx, span := tr.Start(s.Context, "Start ClickShort")
 	defer span.End()
 
 	req := &model.UpdateVisitorRequest{ShortURL: shortURL}
 
-	err := ss.validateClickShort(req)
+	err := s.validateClickShort(req)
 	if err != nil {
 		return nil, err
 	}
 
-	cachedFullURL, err := ss.ShortRepo.GetFullURLByKey(ctx, req.ShortURL)
+	cachedFullURL, err := s.ShortRepo.GetFullURLByKey(ctx, req.ShortURL)
 	if err != nil {
 		if err == redis.Nil {
-			ss.Logger.Info("get data from default databases....")
+			logger.Info("get data from default databases....")
 
-			data, err := ss.ShortRepo.GetByShortURL(ss.Context, req.ShortURL)
+			data, err := s.ShortRepo.GetByShortURL(s.Context, req.ShortURL)
 			if err != nil {
 				return nil, err
 			}
 
-			err = ss.ShortRepo.SetFullURLByKey(ss.Context, req.ShortURL, data.FullURL, redisTTLDuration)
+			err = s.ShortRepo.SetFullURLByKey(s.Context, req.ShortURL, data.FullURL, redisTTLDuration)
 			if err != nil {
 				return nil, err
 			}
 
-			err = ss.ShortRepo.PublishUpdateVisitorCount(ss.Context, req)
+			err = s.ShortRepo.PublishUpdateVisitorCount(s.Context, req)
 			if err != nil {
 				return nil, err
 			}
@@ -117,9 +116,9 @@ func (ss *ShortServiceImpl) ClickShort(shortURL string) (*model.ClickShortRespon
 		return nil, err
 	}
 
-	ss.Logger.Info("get data from caching....")
+	logger.Info("get data from caching....")
 
-	err = ss.ShortRepo.PublishUpdateVisitorCount(ctx, req)
+	err = s.ShortRepo.PublishUpdateVisitorCount(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -127,17 +126,17 @@ func (ss *ShortServiceImpl) ClickShort(shortURL string) (*model.ClickShortRespon
 	return &model.ClickShortResponse{FullURL: cachedFullURL}, nil
 }
 
-func (ss *ShortServiceImpl) UpdateVisitorShort(ctx context.Context, req *model.UpdateVisitorRequest) error {
-	tr := ss.Tracer.Tracer("Shortener-UpdateVisitorShort Service")
+func (s *shortServiceImpl) UpdateVisitorShort(ctx context.Context, req *model.UpdateVisitorRequest) error {
+	tr := s.Tracer.Tracer("Shortener-UpdateVisitorShort Service")
 	ctx, span := tr.Start(ctx, "Start UpdateVisitorShort")
 	defer span.End()
 
-	data, err := ss.ShortRepo.GetByShortURL(ctx, req.ShortURL)
+	data, err := s.ShortRepo.GetByShortURL(ctx, req.ShortURL)
 	if err != nil {
 		return err
 	}
 
-	err = ss.ShortRepo.UpdateVisitorByShortURL(ctx, req, data.Visited)
+	err = s.ShortRepo.UpdateVisitorByShortURL(ctx, req, data.Visited)
 	if err != nil {
 		return err
 	}
@@ -145,8 +144,8 @@ func (ss *ShortServiceImpl) UpdateVisitorShort(ctx context.Context, req *model.U
 	return nil
 }
 
-func (ss *ShortServiceImpl) UpdateShort(ctx context.Context, req *model.UpdateShortRequest) error {
-	tr := ss.Tracer.Tracer("Shortener-UpdateShort Service")
+func (s *shortServiceImpl) UpdateShort(ctx context.Context, req *model.UpdateShortRequest) error {
+	tr := s.Tracer.Tracer("Shortener-UpdateShort Service")
 	ctx, span := tr.Start(ctx, "Start UpdateShort")
 	defer span.End()
 
@@ -154,40 +153,40 @@ func (ss *ShortServiceImpl) UpdateShort(ctx context.Context, req *model.UpdateSh
 		return model.NewError(model.Validation, err.Error())
 	}
 
-	data, err := ss.ShortRepo.GetByID(ctx, req.ID)
+	data, err := s.ShortRepo.GetByID(ctx, req.ID)
 	if err != nil {
 		return err
 	}
 
 	// delete cache if any
-	err = ss.ShortRepo.DeleteFullURLByKey(ctx, data.ShortURL)
+	err = s.ShortRepo.DeleteFullURLByKey(ctx, data.ShortURL)
 	if err != nil {
 		return err
 	}
 
-	return ss.ShortRepo.UpdateFullURLByID(ctx, req)
+	return s.ShortRepo.UpdateFullURLByID(ctx, req)
 }
 
-func (ss *ShortServiceImpl) DeleteShort(ctx context.Context, req *model.DeleteShortRequest) error {
-	tr := ss.Tracer.Tracer("Shortener-DeleteShort Service")
+func (s *shortServiceImpl) DeleteShort(ctx context.Context, req *model.DeleteShortRequest) error {
+	tr := s.Tracer.Tracer("Shortener-DeleteShort Service")
 	ctx, span := tr.Start(ctx, "Start DeleteShort")
 	defer span.End()
 
-	data, err := ss.ShortRepo.GetByID(ctx, req.ID)
+	data, err := s.ShortRepo.GetByID(ctx, req.ID)
 	if err != nil {
 		return err
 	}
 
 	// delete cache if any
-	err = ss.ShortRepo.DeleteFullURLByKey(ctx, data.ShortURL)
+	err = s.ShortRepo.DeleteFullURLByKey(ctx, data.ShortURL)
 	if err != nil {
 		return err
 	}
 
-	return ss.ShortRepo.DeleteByID(ctx, req)
+	return s.ShortRepo.DeleteByID(ctx, req)
 }
 
-func (ss *ShortServiceImpl) validateCreateShort(req *model.CreateShortRequest) error {
+func (s *shortServiceImpl) validateCreateShort(req *model.CreateShortRequest) error {
 	if _, err := url.ParseRequestURI(req.FullURL); err != nil {
 		return model.NewError(model.Validation, err.Error())
 	}
@@ -195,7 +194,7 @@ func (ss *ShortServiceImpl) validateCreateShort(req *model.CreateShortRequest) e
 	return nil
 }
 
-func (ss *ShortServiceImpl) validateClickShort(req *model.UpdateVisitorRequest) error {
+func (s *shortServiceImpl) validateClickShort(req *model.UpdateVisitorRequest) error {
 	if req.ShortURL == "" {
 		return model.NewError(model.Validation, "short URL cannot be empty")
 	}

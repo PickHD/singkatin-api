@@ -1,7 +1,4 @@
-FROM golang:1.20.3 AS builder
-LABEL maintainer="taufikjanuar35@gmail.com"
-
-RUN go version
+FROM golang:1.25 AS builder
 
 WORKDIR /shortener
 COPY ./shortener/go.mod ./
@@ -11,21 +8,13 @@ RUN go mod download
 
 COPY ./shortener .
 
-# Build Go App
 RUN CGO_ENABLED=0 GOOS=linux go build -o shortener-service ./cmd
 
 FROM alpine:3.11.3
 
 WORKDIR /app
 
-RUN mkdir cmd docs
-
-COPY --from=builder ./shortener/cmd/ ./cmd
-COPY --from=builder ./shortener/docs/ ./docs
+COPY --from=builder ./shortener/.env ./.env
 COPY --from=builder ./shortener/shortener-service .
 
-# Expose port
-EXPOSE 8081
-
-# Command to run the executeable
 ENTRYPOINT ["./shortener-service","http"]

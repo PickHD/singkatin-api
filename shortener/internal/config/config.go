@@ -1,6 +1,9 @@
 package config
 
-import "github.com/PickHD/singkatin-revamp/shortener/internal/helper"
+import (
+	"os"
+	"strconv"
+)
 
 type (
 	Configuration struct {
@@ -53,39 +56,49 @@ type (
 func loadConfiguration() *Configuration {
 	return &Configuration{
 		Common: &Common{
-			GrpcPort: helper.GetEnvInt("GRPC_PORT"),
+			GrpcPort: getEnvInt("GRPC_PORT"),
 		},
 		Server: &Server{
-			AppPort: helper.GetEnvInt("APP_PORT"),
-			AppEnv:  helper.GetEnvString("APP_ENV"),
-			AppName: helper.GetEnvString("APP_NAME"),
-			AppID:   helper.GetEnvString("APP_ID"),
+			AppPort: getEnvInt("APP_PORT"),
+			AppEnv:  getEnv("APP_ENV"),
+			AppName: getEnv("APP_NAME"),
+			AppID:   getEnv("APP_ID"),
 		},
 		Database: &Database{
-			Port:                 helper.GetEnvInt("DB_PORT"),
-			Host:                 helper.GetEnvString("DB_HOST"),
-			Name:                 helper.GetEnvString("DB_NAME"),
-			UsersCollection:      helper.GetEnvString("DB_COLLECTION_USERS"),
-			ShortenersCollection: helper.GetEnvString("DB_COLLECTION_SHORTENERS"),
+			Port:                 getEnvInt("DB_PORT"),
+			Host:                 getEnv("DB_HOST"),
+			Name:                 getEnv("DB_NAME"),
+			UsersCollection:      getEnv("DB_COLLECTION_USERS"),
+			ShortenersCollection: getEnv("DB_COLLECTION_SHORTENERS"),
 		},
 		Redis: &Redis{
-			Host: helper.GetEnvString("REDIS_HOST"),
-			Port: helper.GetEnvInt("REDIS_PORT"),
-			TTL:  helper.GetEnvInt("REDIS_TTL"),
+			Host: getEnv("REDIS_HOST"),
+			Port: getEnvInt("REDIS_PORT"),
+			TTL:  getEnvInt("REDIS_TTL"),
 		},
 		RabbitMQ: &RabbitMQ{
-			ConnURL:              helper.GetEnvString("AMQP_SERVER_URL"),
-			QueueCreateShortener: helper.GetEnvString("AMQP_QUEUE_CREATE_SHORTENER"),
-			QueueUpdateVisitor:   helper.GetEnvString("AMQP_QUEUE_UPDATE_VISITOR_COUNT"),
-			QueueUpdateShortener: helper.GetEnvString("AMQP_QUEUE_UPDATE_SHORTENER"),
-			QueueDeleteShortener: helper.GetEnvString("AMQP_QUEUE_DELETE_SHORTENER"),
+			ConnURL:              getEnv("AMQP_SERVER_URL"),
+			QueueCreateShortener: getEnv("AMQP_QUEUE_CREATE_SHORTENER"),
+			QueueUpdateVisitor:   getEnv("AMQP_QUEUE_UPDATE_VISITOR_COUNT"),
+			QueueUpdateShortener: getEnv("AMQP_QUEUE_UPDATE_SHORTENER"),
+			QueueDeleteShortener: getEnv("AMQP_QUEUE_DELETE_SHORTENER"),
 		},
 		Tracer: &Tracer{
-			JaegerURL: helper.GetEnvString("JAEGER_URL"),
+			JaegerURL: getEnv("JAEGER_URL"),
 		},
 	}
 }
 
-func NewConfig() *Configuration {
+func Load() *Configuration {
 	return loadConfiguration()
+}
+
+func getEnv(e string) string {
+	return os.Getenv(e)
+}
+
+func getEnvInt(e string) int {
+	eInt, _ := strconv.Atoi(os.Getenv(e))
+
+	return eInt
 }

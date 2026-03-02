@@ -12,8 +12,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/PickHD/singkatin-revamp/shortener/internal/application"
-	"github.com/PickHD/singkatin-revamp/shortener/internal/infrastructure"
+	"singkatin-api/shortener/internal/bootstrap"
+	"singkatin-api/shortener/internal/routes"
+	"singkatin-api/shortener/pkg/logger"
+
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 )
@@ -25,9 +27,9 @@ const (
 	grpcMode        = "grpc"
 )
 
-// @title           Singkatin Revamp API
+// @title           Singkatin API
 // @version         1.0
-// @description     Revamped URL Shortener API - Shortener Services
+// @description     URL Shortener API - Shortener Services
 // @contact.name    Taufik Januar
 // @contact.email   taufikjanuar35@gmail.com
 // @license.name    MIT
@@ -35,14 +37,23 @@ const (
 // @BasePath        /v1
 // @Schemes         http
 func main() {
-	err := godotenv.Load("./cmd/.env")
-	if err != nil {
-		panic(err)
+	envPaths := []string{
+		"./.env", "./shortener/.env",
+	}
+
+	var loadErr error
+	for _, path := range envPaths {
+		if loadErr = godotenv.Load(path); loadErr == nil {
+			break
+		}
+	}
+
+	if loadErr != nil {
+		panic(loadErr)
 	}
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	// Checking command arguments
 	var (
 		args = os.Args[1:]
 		mode = localServerMode
@@ -52,54 +63,49 @@ func main() {
 		mode = os.Args[1]
 	}
 
-	// create a context with background for setup the application
 	ctx := context.Background()
-	app, err := application.SetupApplication(ctx)
+	appContainer, err := bootstrap.NewContainer(ctx)
 	if err != nil {
-		app.Logger.Error("Failed to initialize app. Error: ", err)
 		panic(err)
 	}
+
+	appContainer.Tracer.SetTracerProvider()
 
 	switch mode {
 	case localServerMode, httpServerMode:
 		var (
-			httpServer = infrastructure.ServeHTTP(app)
+			httpServer = routes.ServeHTTP(appContainer)
 		)
 
 		server := &http.Server{
-			Addr:    fmt.Sprintf(":%d", app.Config.Server.AppPort),
+			Addr:    fmt.Sprintf(":%d", appContainer.Config.Server.AppPort),
 			Handler: httpServer,
 		}
 
-		// Create a channel to receive OS signals
 		sigCh := make(chan os.Signal, 1)
 		signal.Notify(sigCh, os.Interrupt)
 
-		// Start the HTTP server in a separate Goroutine
 		go func() {
 			if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-				app.Logger.Error("Failed to to start server. Error: ", err)
+				logger.Errorf("Failed to to start server. Error: %v", err)
 			}
 		}()
 
-		// Wait for a SIGINT or SIGTERM signal
 		<-sigCh
 
-		// Create a context with a timeout of 5 seconds
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
-		app.Close(ctx)
+		appContainer.Close(ctx)
 
-		// Shutdown the server gracefully
 		if err := server.Shutdown(ctx); err != nil {
-			app.Logger.Error("Failed to shutdown server. Error: ", err)
+			logger.Errorf("Failed to shutdown server. Error: %v", err)
 		}
 
-		app.Logger.Info("SERVER SHUTDOWN GRACEFULLY")
+		logger.Info("SHORTENER SERVICE CLOSED GRACEFULLY")
 	case grpcMode:
 		var (
-			grpcServer = infrastructure.ServeGRPC(app)
+			grpcServer = routes.ServeGRPC(appContainer)
 		)
 
 		errC := make(chan error, 1)
@@ -110,14 +116,14 @@ func main() {
 			syscall.SIGQUIT)
 
 		go func() {
-			addr := fmt.Sprintf("0.0.0.0:%d", app.Config.Common.GrpcPort)
+			addr := fmt.Sprintf("0.0.0.0:%d", appContainer.Config.Common.GrpcPort)
 
 			lis, err := net.Listen("tcp", addr)
 			if err != nil {
-				app.Logger.Error("cannot listen tcp grpc", err)
+				logger.Errorf("cannot listen tcp grpc %v", err)
 			}
 
-			app.Logger.Info("Listening and serving GRPC server", lis.Addr().String())
+			logger.Infof("Listening and serving GRPC server %s", lis.Addr().String())
 
 			if err := grpcServer.Serve(lis); err != nil && !errors.Is(err, grpc.ErrServerStopped) {
 				errC <- err
@@ -127,27 +133,26 @@ func main() {
 		go func() {
 			<-ctx.Done()
 
-			app.Logger.Info("Shutdown signal received")
+			logger.Info("Shutdown signal received")
 
 			defer func() {
 				stop()
 				close(errC)
 			}()
 
-			app.Logger.Info("Shutdown completed")
+			logger.Info("Shutdown completed")
 		}()
 
 		if err := <-errC; err != nil {
-			app.Logger.Error("Error received by channel", err)
+			logger.Errorf("Error received by channel %v", err)
 		}
 	case consumerMode:
-		// Make a channel to receive messages into infinite loop.
 		forever := make(chan bool)
 
-		queues := []string{app.Config.RabbitMQ.QueueCreateShortener, app.Config.RabbitMQ.QueueUpdateVisitor, app.Config.RabbitMQ.QueueUpdateShortener, app.Config.RabbitMQ.QueueDeleteShortener}
+		queues := []string{appContainer.Config.RabbitMQ.QueueCreateShortener, appContainer.Config.RabbitMQ.QueueUpdateVisitor, appContainer.Config.RabbitMQ.QueueUpdateShortener, appContainer.Config.RabbitMQ.QueueDeleteShortener}
 
 		for _, q := range queues {
-			go infrastructure.ConsumeMessages(app, q)
+			go appContainer.RabbitMQ.ConsumeMessages(appContainer.Context, appContainer.Config, appContainer.ShortController, q)
 		}
 
 		<-forever

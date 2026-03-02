@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
   mongo:
     image: mongo
@@ -43,17 +41,42 @@ services:
   minio:
     image: minio/minio
     container_name: minio
+    restart: always
     ports:
-      - '9000:9000'
-      - '9001:9001'
+      - "9000:9000"
+      - "9001:9001"
     environment:
-      - MINIO_ROOT_USER=singkatin
-      - MINIO_ROOT_PASSWORD=singkatin@dev
-    networks:
-      - singkatin-dev
+      MINIO_ROOT_USER: singkatin
+      MINIO_ROOT_PASSWORD: singkatin@dev
     volumes:
       - ~/.docker-conf/minio-data:/data
-    command: server --console-address :9001 /data
+    command: server --console-address ":9001" /data
+    networks:
+      - singkatin-dev
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://minio:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  minio-init:
+    image: minio/mc
+    container_name: minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: singkatin
+      MINIO_ROOT_PASSWORD: singkatin@dev
+      MINIO_BUCKET_NAME: singkatin
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc alias set myminio http://minio:9000 singkatin singkatin@dev;
+      /usr/bin/mc mb myminio/singkatin --ignore-existing;
+      /usr/bin/mc anonymous set download myminio/singkatin;
+      exit 0;
+      "
+    networks:
+      - singkatin-dev
   auth-service-http:
     container_name: auth-service-http
     build:

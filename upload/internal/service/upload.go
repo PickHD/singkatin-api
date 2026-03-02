@@ -3,10 +3,10 @@ package service
 import (
 	"context"
 
-	"github.com/PickHD/singkatin-revamp/upload/internal/config"
-	"github.com/PickHD/singkatin-revamp/upload/internal/model"
-	"github.com/PickHD/singkatin-revamp/upload/internal/repository"
-	"github.com/sirupsen/logrus"
+	"singkatin-api/upload/internal/config"
+	"singkatin-api/upload/internal/model"
+	"singkatin-api/upload/internal/repository"
+
 	"go.opentelemetry.io/otel/sdk/trace"
 )
 
@@ -16,22 +16,19 @@ type (
 		UploadAvatarUser(ctx context.Context, req *model.UploadAvatarRequest) error
 	}
 
-	// UploadServiceImpl is an app upload struct that consists of all the dependencies needed for upload service
 	UploadServiceImpl struct {
 		Context    context.Context
 		Config     *config.Configuration
-		Logger     *logrus.Logger
 		Tracer     *trace.TracerProvider
 		UploadRepo repository.UploadRepository
 	}
 )
 
 // NewUploadService return new instances upload repository
-func NewUploadService(ctx context.Context, config *config.Configuration, logger *logrus.Logger, tracer *trace.TracerProvider, uploadRepo repository.UploadRepository) *UploadServiceImpl {
+func NewUploadService(ctx context.Context, config *config.Configuration, tracer *trace.TracerProvider, uploadRepo repository.UploadRepository) *UploadServiceImpl {
 	return &UploadServiceImpl{
 		Context:    ctx,
 		Config:     config,
-		Logger:     logger,
 		Tracer:     tracer,
 		UploadRepo: uploadRepo,
 	}

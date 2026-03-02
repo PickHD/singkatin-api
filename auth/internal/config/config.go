@@ -1,9 +1,12 @@
 package config
 
-import "github.com/PickHD/singkatin-revamp/auth/internal/helper"
+import (
+	"os"
+	"strconv"
+)
 
 type (
-	Configuration struct {
+	Config struct {
 		Server   *Server
 		Common   *Common
 		Database *Database
@@ -57,47 +60,63 @@ type (
 	}
 )
 
-func loadConfiguration() *Configuration {
-	return &Configuration{
+func loadConfiguration() *Config {
+	return &Config{
 		Common: &Common{
-			JWTExpire: helper.GetEnvInt("JWT_EXPIRE"),
+			JWTExpire: getEnvInt("JWT_EXPIRE"),
 		},
 		Server: &Server{
-			AppPort: helper.GetEnvInt("APP_PORT"),
-			AppEnv:  helper.GetEnvString("APP_ENV"),
-			AppName: helper.GetEnvString("APP_NAME"),
-			AppID:   helper.GetEnvString("APP_ID"),
+			AppPort: getEnvInt("APP_PORT"),
+			AppEnv:  getEnv("APP_ENV"),
+			AppName: getEnv("APP_NAME"),
+			AppID:   getEnv("APP_ID"),
 		},
 		Database: &Database{
-			Port:                 helper.GetEnvInt("DB_PORT"),
-			Host:                 helper.GetEnvString("DB_HOST"),
-			Name:                 helper.GetEnvString("DB_NAME"),
-			UsersCollection:      helper.GetEnvString("DB_COLLECTION_USERS"),
-			ShortenersCollection: helper.GetEnvString("DB_COLLECTION_SHORTENERS"),
+			Port:                 getEnvInt("DB_PORT"),
+			Host:                 getEnv("DB_HOST"),
+			Name:                 getEnv("DB_NAME"),
+			UsersCollection:      getEnv("DB_COLLECTION_USERS"),
+			ShortenersCollection: getEnv("DB_COLLECTION_SHORTENERS"),
 		},
 		Redis: &Redis{
-			Host: helper.GetEnvString("REDIS_HOST"),
-			Port: helper.GetEnvInt("REDIS_PORT"),
-			TTL:  helper.GetEnvInt("REDIS_TTL"),
+			Host: getEnv("REDIS_HOST"),
+			Port: getEnvInt("REDIS_PORT"),
+			TTL:  getEnvInt("REDIS_TTL"),
 		},
 		Secret: &Secret{
-			JWTSecret: helper.GetEnvString("JWT_SECRET"),
+			JWTSecret: getEnv("JWT_SECRET"),
 		},
 		Tracer: &Tracer{
-			JaegerURL: helper.GetEnvString("JAEGER_URL"),
+			JaegerURL: getEnv("JAEGER_URL"),
 		},
 		Mailer: &Mailer{
-			Host:     helper.GetEnvString("SMTP_HOST"),
-			Port:     helper.GetEnvInt("SMTP_PORT"),
-			Username: helper.GetEnvString("SMTP_USERNAME"),
-			Password: helper.GetEnvString("SMTP_PASSWORD"),
-			Sender:   helper.GetEnvString("SMTP_SENDER"),
-			SSL:      helper.GetEnvInt("SMTP_SSL"),
-			IsTLS:    helper.GetEnvBool("SMTP_IS_TLS"),
+			Host:     getEnv("SMTP_HOST"),
+			Port:     getEnvInt("SMTP_PORT"),
+			Username: getEnv("SMTP_USERNAME"),
+			Password: getEnv("SMTP_PASSWORD"),
+			Sender:   getEnv("SMTP_SENDER"),
+			SSL:      getEnvInt("SMTP_SSL"),
+			IsTLS:    getEnvBool("SMTP_IS_TLS"),
 		},
 	}
 }
 
-func NewConfig() *Configuration {
+func Load() *Config {
 	return loadConfiguration()
+}
+
+func getEnv(e string) string {
+	return os.Getenv(e)
+}
+
+func getEnvInt(e string) int {
+	eInt, _ := strconv.Atoi(os.Getenv(e))
+
+	return eInt
+}
+
+func getEnvBool(e string) bool {
+	eBoolean, _ := strconv.ParseBool(e)
+
+	return eBoolean
 }

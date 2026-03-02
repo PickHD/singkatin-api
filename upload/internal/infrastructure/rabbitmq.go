@@ -1,19 +1,66 @@
 package infrastructure
 
 import (
-	"fmt"
+	"context"
 
-	"github.com/PickHD/singkatin-revamp/upload/internal/application"
-	uploadpb "github.com/PickHD/singkatin-revamp/upload/pkg/api/v1/proto/upload"
+	"singkatin-api/upload/internal/config"
+	"singkatin-api/upload/internal/controller"
+	uploadpb "singkatin-api/upload/pkg/api/v1/proto/upload"
+	"singkatin-api/upload/pkg/logger"
+
+	"github.com/streadway/amqp"
 	"google.golang.org/protobuf/proto"
 )
 
-// ConsumeMessages generic function to consume message from defined param queues
-func ConsumeMessages(app *application.App, queueName string) {
-	dep := application.SetupDependencyInjection(app)
+type RabbitMQConnectionProvider struct {
+	client *amqp.Channel
+}
 
+func NewRabbitMQConnection(ctx context.Context, cfg *config.Configuration) *RabbitMQConnectionProvider {
+	amqpConn, err := amqp.Dial(cfg.RabbitMQ.ConnURL)
+	if err != nil {
+		logger.Errorf("failed dial RabbitMQ, error : %v", err)
+		return nil
+	}
+
+	amqpClient, err := amqpConn.Channel()
+	if err != nil {
+		logger.Errorf("failed open RabbitMQ Channels, error : %v", err)
+		return nil
+	}
+
+	queues := []string{cfg.RabbitMQ.QueueUploadAvatar}
+
+	for _, q := range queues {
+		_, err = amqpClient.QueueDeclare(
+			q,     // queue name
+			true,  // durable
+			false, // auto delete
+			false, // exclusive
+			false, // no wait
+			nil,   // arguments
+		)
+		if err != nil {
+			logger.Errorf("failed queue declare Channels, error : %v", err)
+			return nil
+		}
+	}
+
+	return &RabbitMQConnectionProvider{client: amqpClient}
+}
+
+func (r *RabbitMQConnectionProvider) GetClient() *amqp.Channel {
+	return r.client
+}
+
+func (r *RabbitMQConnectionProvider) Close() error {
+	return r.client.Close()
+}
+
+// ConsumeMessages generic function to consume message from defined param queues
+func (r *RabbitMQConnectionProvider) ConsumeMessages(ctx context.Context, cfg *config.Configuration, uploadController controller.UploadController, queueName string) {
 	// Subscribing to queues for getting messages.
-	messages, err := app.RabbitMQ.Consume(
+	messages, err := r.client.Consume(
 		queueName, // queue name
 		"",        // consumer
 		true,      // auto-ack
@@ -23,10 +70,10 @@ func ConsumeMessages(app *application.App, queueName string) {
 		nil,       // arguments
 	)
 	if err != nil {
-		app.Logger.Error("Failed consume message in queue", queueName)
+		logger.Errorf("Failed consume message in queue %s, %v", queueName, err)
 	}
 
-	app.Logger.Info("Waiting Message in Queues ", queueName, ".....")
+	logger.Infof("Waiting Message in Queues %s.....", queueName)
 
 	go func() {
 		for msg := range messages {
@@ -34,17 +81,17 @@ func ConsumeMessages(app *application.App, queueName string) {
 
 			err := proto.Unmarshal(msg.Body, req)
 			if err != nil {
-				app.Logger.Error("Unmarshal proto UploadAvatarMessage ERROR, ", err)
+				logger.Errorf("Unmarshal proto UploadAvatarMessage ERROR, %v", err)
 			}
 
-			app.Logger.Info(fmt.Sprintf("[%s] Success Consume Message :", queueName), req)
+			logger.Infof("[%s] Success Consume Message : %v", queueName, req)
 
-			err = dep.UploadController.ProcessUploadAvatarUser(app.Context, req)
+			err = uploadController.ProcessUploadAvatarUser(ctx, req)
 			if err != nil {
-				app.Logger.Error("ProcessUploadAvatarUser ERROR, ", err)
+				logger.Errorf("ProcessUploadAvatarUser ERROR, %v", err)
 			}
 
-			app.Logger.Info(fmt.Sprintf("[%s] Success Process Message :", queueName), req)
+			logger.Infof("[%s] Success Process Message : %v", queueName, req)
 		}
 	}()
 }

@@ -3,11 +3,11 @@ package controller
 import (
 	"context"
 
-	"github.com/PickHD/singkatin-revamp/upload/internal/config"
-	"github.com/PickHD/singkatin-revamp/upload/internal/model"
-	"github.com/PickHD/singkatin-revamp/upload/internal/service"
-	uploadpb "github.com/PickHD/singkatin-revamp/upload/pkg/api/v1/proto/upload"
-	"github.com/sirupsen/logrus"
+	"singkatin-api/upload/internal/config"
+	"singkatin-api/upload/internal/model"
+	"singkatin-api/upload/internal/service"
+	uploadpb "singkatin-api/upload/pkg/api/v1/proto/upload"
+
 	"go.opentelemetry.io/otel/sdk/trace"
 )
 
@@ -17,22 +17,19 @@ type (
 		ProcessUploadAvatarUser(ctx context.Context, msg *uploadpb.UploadAvatarMessage) error
 	}
 
-	// UploadControllerImpl is an app upload struct that consists of all the dependencies needed for upload controller
 	UploadControllerImpl struct {
 		Context   context.Context
 		Config    *config.Configuration
-		Logger    *logrus.Logger
 		Tracer    *trace.TracerProvider
 		UploadSvc service.UploadService
 	}
 )
 
 // NewUploadController return new instances upload controller
-func NewUploadController(ctx context.Context, config *config.Configuration, logger *logrus.Logger, tracer *trace.TracerProvider, uploadSvc service.UploadService) *UploadControllerImpl {
+func NewUploadController(ctx context.Context, config *config.Configuration, tracer *trace.TracerProvider, uploadSvc service.UploadService) *UploadControllerImpl {
 	return &UploadControllerImpl{
 		Context:   ctx,
 		Config:    config,
-		Logger:    logger,
 		Tracer:    tracer,
 		UploadSvc: uploadSvc,
 	}

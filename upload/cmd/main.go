@@ -3,10 +3,13 @@ package main
 import (
 	"context"
 	"os"
+	"os/signal"
 	"runtime"
+	"time"
 
-	"github.com/PickHD/singkatin-revamp/upload/internal/application"
-	"github.com/PickHD/singkatin-revamp/upload/internal/infrastructure"
+	"singkatin-api/upload/internal/bootstrap"
+	"singkatin-api/upload/pkg/logger"
+
 	"github.com/joho/godotenv"
 )
 
@@ -15,14 +18,22 @@ const (
 )
 
 func main() {
-	err := godotenv.Load("./cmd/.env")
-	if err != nil {
-		panic(err)
+	envPaths := []string{
+		"./.env", "./upload/.env",
+	}
+
+	var loadErr error
+	for _, path := range envPaths {
+		if loadErr = godotenv.Load(path); loadErr == nil {
+			break
+		}
+	}
+
+	if loadErr != nil {
+		panic(loadErr)
 	}
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
-
-	// Checking command arguments
 	var (
 		args = os.Args[1:]
 		mode = consumerMode
@@ -32,25 +43,40 @@ func main() {
 		mode = os.Args[1]
 	}
 
-	// create a context with background for setup the application
 	ctx := context.Background()
-	app, err := application.SetupApplication(ctx)
+	appContainer, err := bootstrap.NewContainer(ctx)
 	if err != nil {
-		app.Logger.Error("Failed to initialize app. Error: ", err)
 		panic(err)
 	}
 
+	appContainer.Tracer.SetTracerProvider()
+
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt)
+
 	switch mode {
 	case consumerMode:
-		// Make a channel to receive messages into infinite loop.
 		forever := make(chan bool)
 
-		queues := []string{app.Config.RabbitMQ.QueueUploadAvatar}
+		queues := []string{appContainer.Config.RabbitMQ.QueueUploadAvatar}
 
 		for _, q := range queues {
-			go infrastructure.ConsumeMessages(app, q)
+			go appContainer.RabbitMQ.ConsumeMessages(appContainer.Context, appContainer.Config, appContainer.UploadController, q)
 		}
 
+		go func() {
+			<-sigCh
+			logger.Info("Shutdown signal received")
+			forever <- true
+		}()
+
 		<-forever
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		appContainer.Close(ctx)
+
+		logger.Info("UPLOAD SERVICE CLOSED GRACEFULLY")
 	}
 }

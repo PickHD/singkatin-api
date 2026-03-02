@@ -1,7 +1,8 @@
 package config
 
 import (
-	"github.com/PickHD/singkatin-revamp/upload/internal/helper"
+	"os"
+	"strconv"
 )
 
 type (
@@ -46,32 +47,48 @@ type (
 func loadConfiguration() *Configuration {
 	return &Configuration{
 		Common: &Common{
-			GrpcPort: helper.GetEnvInt("GRPC_PORT"),
+			GrpcPort: getEnvInt("GRPC_PORT"),
 		},
 		Server: &Server{
-			AppPort: helper.GetEnvInt("APP_PORT"),
-			AppEnv:  helper.GetEnvString("APP_ENV"),
-			AppName: helper.GetEnvString("APP_NAME"),
-			AppID:   helper.GetEnvString("APP_ID"),
+			AppPort: getEnvInt("APP_PORT"),
+			AppEnv:  getEnv("APP_ENV"),
+			AppName: getEnv("APP_NAME"),
+			AppID:   getEnv("APP_ID"),
 		},
 		RabbitMQ: &RabbitMQ{
-			ConnURL:           helper.GetEnvString("AMQP_SERVER_URL"),
-			QueueUploadAvatar: helper.GetEnvString("AMQP_QUEUE_UPLOAD_AVATAR"),
+			ConnURL:           getEnv("AMQP_SERVER_URL"),
+			QueueUploadAvatar: getEnv("AMQP_QUEUE_UPLOAD_AVATAR"),
 		},
 		Tracer: &Tracer{
-			JaegerURL: helper.GetEnvString("JAEGER_URL"),
+			JaegerURL: getEnv("JAEGER_URL"),
 		},
 		MinIO: &MinIO{
-			Endpoint:  helper.GetEnvString("MINIO_ENDPOINT"),
-			AccessKey: helper.GetEnvString("MINIO_ACCESSKEY"),
-			SecretKey: helper.GetEnvString("MINIO_SECRETKEY"),
-			Bucket:    helper.GetEnvString("MINIO_BUCKET"),
-			UseSSL:    helper.GetEnvBool("MINIO_USE_SSL"),
-			Location:  helper.GetEnvString("MINIO_LOCATION"),
+			Endpoint:  getEnv("MINIO_ENDPOINT"),
+			AccessKey: getEnv("MINIO_ACCESSKEY"),
+			SecretKey: getEnv("MINIO_SECRETKEY"),
+			Bucket:    getEnv("MINIO_BUCKET"),
+			UseSSL:    getEnvBool("MINIO_USE_SSL"),
+			Location:  getEnv("MINIO_LOCATION"),
 		},
 	}
 }
 
-func NewConfig() *Configuration {
+func Load() *Configuration {
 	return loadConfiguration()
+}
+
+func getEnv(e string) string {
+	return os.Getenv(e)
+}
+
+func getEnvInt(e string) int {
+	eInt, _ := strconv.Atoi(os.Getenv(e))
+
+	return eInt
+}
+
+func getEnvBool(e string) bool {
+	eBool, _ := strconv.ParseBool(os.Getenv(e))
+
+	return eBool
 }

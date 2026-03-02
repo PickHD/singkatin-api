@@ -4,10 +4,10 @@ import "github.com/gin-gonic/gin"
 
 type (
 	BaseResponse struct {
-		Messages string      `json:"messages"`
-		Data     interface{} `json:"data"`
-		Error    error       `json:"error,omitempty"`
-		Meta     *Meta       `json:"meta,omitempty"`
+		Messages string `json:"messages"`
+		Data     any    `json:"data"`
+		Error    error  `json:"error,omitempty"`
+		Meta     *Meta  `json:"meta,omitempty"`
 	}
 
 	Meta struct {

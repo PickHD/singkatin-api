@@ -49,12 +49,11 @@ func main() {
 	}
 
 	if loadErr != nil {
-		logger.Warn("Warning: .env file not found (this is OK in Docker, env vars will be used)")
+		panic(loadErr)
 	}
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	// Checking command arguments
 	var (
 		args = os.Args[1:]
 		mode = localServerMode
@@ -67,9 +66,10 @@ func main() {
 	ctx := context.Background()
 	appContainer, err := bootstrap.NewContainer(ctx)
 	if err != nil {
-		logger.Errorf("Failed to initialize app. Error: %v", err)
-		os.Exit(1)
+		panic(err)
 	}
+
+	appContainer.Tracer.SetTracerProvider()
 
 	switch mode {
 	case localServerMode, httpServerMode:
@@ -82,27 +82,22 @@ func main() {
 			Handler: httpServer,
 		}
 
-		// Create a channel to receive OS signals
 		sigCh := make(chan os.Signal, 1)
 		signal.Notify(sigCh, os.Interrupt)
 
-		// Start the HTTP server in a separate Goroutine
 		go func() {
 			if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 				logger.Errorf("Failed to to start server. Error: %v", err)
 			}
 		}()
 
-		// Wait for a SIGINT or SIGTERM signal
 		<-sigCh
 
-		// Create a context with a timeout of 5 seconds
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
 		appContainer.Close(ctx)
 
-		// Shutdown the server gracefully
 		if err := server.Shutdown(ctx); err != nil {
 			logger.Errorf("Failed to shutdown server. Error: %v", err)
 		}

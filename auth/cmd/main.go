@@ -43,7 +43,7 @@ func main() {
 	}
 
 	if loadErr != nil {
-		logger.Warn("Warning: .env file not found (this is OK in Docker, env vars will be used)")
+		panic(loadErr)
 	}
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
@@ -60,9 +60,9 @@ func main() {
 	ctx := context.Background()
 	appContainer, err := bootstrap.NewContainer(ctx)
 	if err != nil {
-		logger.Errorf("Failed to initialize application container: %v", err)
-		os.Exit(1)
+		panic(err)
 	}
+	appContainer.Tracer.SetTracerProvider()
 
 	switch mode {
 	case localServerMode, httpServerMode:

@@ -6,9 +6,12 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
+	"syscall"
 
-	"github.com/PickHD/singkatin-revamp/user/internal/application"
-	"github.com/PickHD/singkatin-revamp/user/internal/infrastructure"
+	"singkatin-api/user/internal/bootstrap"
+	"singkatin-api/user/internal/routes"
+	"singkatin-api/user/pkg/logger"
+
 	"github.com/joho/godotenv"
 )
 
@@ -17,9 +20,9 @@ const (
 	httpServerMode  = "http"
 )
 
-// @title           Singkatin Revamp API
+// @title           Singkatin API
 // @version         1.0
-// @description     Revamped URL Shortener API - User Services
+// @description     URL Shortener API - User Services
 // @contact.name    Taufik Januar
 // @contact.email   taufikjanuar35@gmail.com
 // @license.name    MIT
@@ -27,14 +30,23 @@ const (
 // @BasePath        /v1
 // @Schemes         http
 func main() {
-	err := godotenv.Load("./cmd/.env")
-	if err != nil {
-		panic(err)
+	envPaths := []string{
+		"./.env", "./user/.env",
+	}
+
+	var loadErr error
+	for _, path := range envPaths {
+		if loadErr = godotenv.Load(path); loadErr == nil {
+			break
+		}
+	}
+
+	if loadErr != nil {
+		panic(loadErr)
 	}
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	// Checking command arguments
 	var (
 		args = os.Args[1:]
 		mode = localServerMode
@@ -44,37 +56,35 @@ func main() {
 		mode = os.Args[1]
 	}
 
-	// create a context with background for setup the application
 	ctx := context.Background()
-	app, err := application.SetupApplication(ctx)
+	appContainer, err := bootstrap.NewContainer(ctx)
 	if err != nil {
-		app.Logger.Error("Failed to initialize app. Error: ", err)
 		panic(err)
 	}
+	appContainer.Tracer.SetTracerProvider()
 
-	//create a channel for listening to OS signals and connecting OS interrupts to the channel
 	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
-	serverShutdown := make(chan struct{})
-
-	go func() {
-		_ = <-c
-		app.Logger.Info("SERVER SHUTDOWN GRACEFULLY")
-		app.Close(app.Context)
-		_ = app.Application.Shutdown()
-		serverShutdown <- struct{}{}
-	}()
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 
 	switch mode {
 	case localServerMode, httpServerMode:
-		var (
-			httpServer = infrastructure.ServeHTTP(app)
-		)
+		httpServer := routes.ServeHTTP(appContainer)
 
-		if err := httpServer.Listen(fmt.Sprintf(":%d", app.Config.Server.AppPort)); err != nil {
-			app.Logger.Error("Failed to to start server. Error: ", err)
-			panic(err)
+		go func() {
+			port := fmt.Sprintf(":%d", appContainer.Config.Server.AppPort)
+			if err := httpServer.Listen(port); err != nil {
+				logger.Errorf("Server listen error/closed: %v", err)
+			}
+		}()
+
+		<-c
+
+		if err := httpServer.Shutdown(); err != nil {
+			logger.Errorf("Failed to gracefully shutdown HTTP server: %v", err)
 		}
 
+		appContainer.Close(appContainer.Context)
+
+		logger.Info("USER SERVICE CLOSED GRACEFULLY")
 	}
 }

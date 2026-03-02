@@ -5,8 +5,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/PickHD/singkatin-revamp/user/internal/helper"
-	"github.com/PickHD/singkatin-revamp/user/internal/model"
+	"singkatin-api/user/internal/config"
+	"singkatin-api/user/internal/model"
+	"singkatin-api/user/pkg/response"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt"
 )
@@ -34,7 +36,7 @@ func ValidateJWTMiddleware(ctx *fiber.Ctx) error {
 	// validate JWT coming from request, if valid decode into a struct
 	decodedPayload, err := validate(ctx)
 	if err != nil {
-		return helper.NewResponses[any](ctx, fiber.StatusUnauthorized, fmt.Sprintf("Unauthorized access, reason : %s", err.Error()), err, nil, nil)
+		return response.NewResponses[any](ctx, fiber.StatusUnauthorized, fmt.Sprintf("Unauthorized access, reason : %s", err.Error()), err, nil, nil)
 	}
 
 	// pass decoded payload into ctx.Locals()
@@ -46,6 +48,8 @@ func ValidateJWTMiddleware(ctx *fiber.Ctx) error {
 
 // validate will checking validity of signed JWT token from request in
 func validate(ctx *fiber.Ctx) (DecodePayloadData, error) {
+	cfg := config.Load()
+
 	header := ctx.Get("Authorization", "")
 	if !strings.Contains(header, "Bearer") {
 		return DecodePayloadData{}, model.NewError(model.NotFound, "Token not found")
@@ -56,7 +60,7 @@ func validate(ctx *fiber.Ctx) (DecodePayloadData, error) {
 		if _, isValid := token.Method.(*jwt.SigningMethodHMAC); !isValid {
 			return nil, model.NewError(model.Validation, "Invalid token")
 		}
-		return []byte(helper.GetEnvString("JWT_SECRET")), nil
+		return []byte(cfg.Secret.JWTSecret), nil
 	})
 	if err != nil {
 		return DecodePayloadData{}, err

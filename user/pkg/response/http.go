@@ -1,15 +1,13 @@
-package helper
+package response
 
-import (
-	"github.com/gofiber/fiber/v2"
-)
+import "github.com/gofiber/fiber/v2"
 
 type (
 	BaseResponse struct {
-		Messages string      `json:"messages"`
-		Data     interface{} `json:"data"`
-		Error    error       `json:"error"`
-		Meta     *Meta       `json:"meta,omitempty"`
+		Messages string `json:"messages"`
+		Data     any    `json:"data"`
+		Error    error  `json:"error,omitempty"`
+		Meta     *Meta  `json:"meta,omitempty"`
 	}
 
 	Meta struct {
@@ -37,6 +35,3 @@ func NewResponses[T any](ctx *fiber.Ctx, statusCode int, message string, data T,
 		Meta:     nil,
 	})
 }
-
-// OptionsHandler will handing preflight requests
-func OptionsHandler(ctx *fiber.Ctx) error { return nil }

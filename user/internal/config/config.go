@@ -1,9 +1,12 @@
 package config
 
-import "github.com/PickHD/singkatin-revamp/user/internal/helper"
+import (
+	"os"
+	"strconv"
+)
 
 type (
-	Configuration struct {
+	Config struct {
 		Server      *Server
 		Common      *Common
 		Database    *Database
@@ -65,53 +68,69 @@ type (
 	}
 )
 
-func loadConfiguration() *Configuration {
-	return &Configuration{
+func loadConfiguration() *Config {
+	return &Config{
 		Common: &Common{
-			JWTExpire: helper.GetEnvInt("JWT_EXPIRE"),
-			GRPCPort:  helper.GetEnvString("GRPC_SHORTENER_HOST"),
+			JWTExpire: getEnvInt("JWT_EXPIRE"),
+			GRPCPort:  getEnv("GRPC_SHORTENER_HOST"),
 		},
 		Server: &Server{
-			AppPort: helper.GetEnvInt("APP_PORT"),
-			AppEnv:  helper.GetEnvString("APP_ENV"),
-			AppName: helper.GetEnvString("APP_NAME"),
-			AppID:   helper.GetEnvString("APP_ID"),
+			AppPort: getEnvInt("APP_PORT"),
+			AppEnv:  getEnv("APP_ENV"),
+			AppName: getEnv("APP_NAME"),
+			AppID:   getEnv("APP_ID"),
 		},
 		Database: &Database{
-			Port:                 helper.GetEnvInt("DB_PORT"),
-			Host:                 helper.GetEnvString("DB_HOST"),
-			Name:                 helper.GetEnvString("DB_NAME"),
-			UsersCollection:      helper.GetEnvString("DB_COLLECTION_USERS"),
-			ShortenersCollection: helper.GetEnvString("DB_COLLECTION_SHORTENERS"),
+			Port:                 getEnvInt("DB_PORT"),
+			Host:                 getEnv("DB_HOST"),
+			Name:                 getEnv("DB_NAME"),
+			UsersCollection:      getEnv("DB_COLLECTION_USERS"),
+			ShortenersCollection: getEnv("DB_COLLECTION_SHORTENERS"),
 		},
 		RabbitMQ: &RabbitMQ{
-			ConnURL:              helper.GetEnvString("AMQP_SERVER_URL"),
-			QueueCreateShortener: helper.GetEnvString("AMQP_QUEUE_CREATE_SHORTENER"),
-			QueueUpdateVisitor:   helper.GetEnvString("AMQP_QUEUE_UPDATE_VISITOR"),
-			QueueUploadAvatar:    helper.GetEnvString("AMQP_QUEUE_UPLOAD_AVATAR"),
-			QueueUpdateShortener: helper.GetEnvString("AMQP_QUEUE_UPDATE_SHORTENER"),
-			QueueDeleteShortener: helper.GetEnvString("AMQP_QUEUE_DELETE_SHORTENER"),
+			ConnURL:              getEnv("AMQP_SERVER_URL"),
+			QueueCreateShortener: getEnv("AMQP_QUEUE_CREATE_SHORTENER"),
+			QueueUpdateVisitor:   getEnv("AMQP_QUEUE_UPDATE_VISITOR"),
+			QueueUploadAvatar:    getEnv("AMQP_QUEUE_UPLOAD_AVATAR"),
+			QueueUpdateShortener: getEnv("AMQP_QUEUE_UPDATE_SHORTENER"),
+			QueueDeleteShortener: getEnv("AMQP_QUEUE_DELETE_SHORTENER"),
 		},
 		Secret: &Secret{
-			JWTSecret: helper.GetEnvString("JWT_SECRET"),
+			JWTSecret: getEnv("JWT_SECRET"),
 		},
 		Tracer: &Tracer{
-			JaegerURL: helper.GetEnvString("JAEGER_URL"),
+			JaegerURL: getEnv("JAEGER_URL"),
 		},
 		MinIO: &MinIO{
-			Endpoint:  helper.GetEnvString("MINIO_ENDPOINT"),
-			AccessKey: helper.GetEnvString("MINIO_ACCESSKEY"),
-			SecretKey: helper.GetEnvString("MINIO_SECRETKEY"),
-			Bucket:    helper.GetEnvString("MINIO_BUCKET"),
-			UseSSL:    helper.GetEnvBool("MINIO_USE_SSL"),
-			Location:  helper.GetEnvString("MINIO_LOCATION"),
+			Endpoint:  getEnv("MINIO_ENDPOINT"),
+			AccessKey: getEnv("MINIO_ACCESSKEY"),
+			SecretKey: getEnv("MINIO_SECRETKEY"),
+			Bucket:    getEnv("MINIO_BUCKET"),
+			UseSSL:    getEnvBool("MINIO_USE_SSL"),
+			Location:  getEnv("MINIO_LOCATION"),
 		},
 		HttpService: &HttpService{
-			ShortenerBaseAPIURL: helper.GetEnvString("SHORTENER_BASE_API_URL"),
+			ShortenerBaseAPIURL: getEnv("SHORTENER_BASE_API_URL"),
 		},
 	}
 }
 
-func NewConfig() *Configuration {
+func Load() *Config {
 	return loadConfiguration()
+}
+
+func getEnv(e string) string {
+	return os.Getenv(e)
+}
+
+func getEnvInt(e string) int {
+	eInt, _ := strconv.Atoi(os.Getenv(e))
+
+	return eInt
+}
+
+func getEnvBool(e string) bool {
+	eBool, _ := strconv.ParseBool(os.Getenv(e))
+
+	return eBool
 }

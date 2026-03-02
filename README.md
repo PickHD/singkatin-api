@@ -1,15 +1,8 @@
-# singkatin-revamp
-Revamped [Last Projects URL Shortener API's](https://github.com/PickHD/singkatin-api) using Golang.
+# singkatin-api
+Microservice-based URL shortener implementing Clean Architecture. Includes a functional dashboard for registered users to manage links. 
 
 ## Architect Overview :
-![ARCH](https://raw.github.com/PickHD/singkatin-revamp/master/arch_singkatin_revamp.png)
-
-## Whats Changed? :
-1. From Monolith to Microservices
-2. Scalable & Maintainable Codes
-3. Become Asynchronous Operation using Messaging Queues (RabbitMQ)
-4. From SQL to NoSQL
-5. Using RPC for service interactions
+![ARCH](https://raw.github.com/PickHD/singkatin-api/master/arch_singkatin_api.png)
 
 ## Main Features : 
 1. Register

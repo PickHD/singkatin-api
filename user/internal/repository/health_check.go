@@ -16,8 +16,8 @@ type (
 		Check() (bool, error)
 	}
 
-	// HealthCheckRepositoryImpl is an app health check struct that consists of all the dependencies needed for health check repository
-	HealthCheckRepositoryImpl struct {
+	// healthCheckRepositoryImpl is an app health check struct that consists of all the dependencies needed for health check repository
+	healthCheckRepositoryImpl struct {
 		Context context.Context
 		Config  *config.Config
 		Tracer  *trace.TracerProvider
@@ -26,8 +26,8 @@ type (
 )
 
 // NewHealthCheckRepository return new instances health check repository
-func NewHealthCheckRepository(ctx context.Context, config *config.Config, tracer *trace.TracerProvider, db *mongo.Database) *HealthCheckRepositoryImpl {
-	return &HealthCheckRepositoryImpl{
+func NewHealthCheckRepository(ctx context.Context, config *config.Config, tracer *trace.TracerProvider, db *mongo.Database) HealthCheckRepository {
+	return &healthCheckRepositoryImpl{
 		Context: ctx,
 		Config:  config,
 		Tracer:  tracer,
@@ -35,12 +35,12 @@ func NewHealthCheckRepository(ctx context.Context, config *config.Config, tracer
 	}
 }
 
-func (hr *HealthCheckRepositoryImpl) Check() (bool, error) {
-	tr := hr.Tracer.Tracer("User-Check Repository")
-	_, span := tr.Start(hr.Context, "Start Check")
+func (h *healthCheckRepositoryImpl) Check() (bool, error) {
+	tr := h.Tracer.Tracer("User-Check Repository")
+	_, span := tr.Start(h.Context, "Start Check")
 	defer span.End()
 
-	if err := hr.DB.Client().Ping(hr.Context, nil); err != nil {
+	if err := h.DB.Client().Ping(h.Context, nil); err != nil {
 		logger.Error("HealthCheckRepositoryImpl.Check() Ping DB ERROR, ", err)
 		return false, nil
 	}

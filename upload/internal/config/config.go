@@ -6,7 +6,7 @@ import (
 )
 
 type (
-	Configuration struct {
+	Config struct {
 		Server   *Server
 		Common   *Common
 		RabbitMQ *RabbitMQ
@@ -44,8 +44,8 @@ type (
 	}
 )
 
-func loadConfiguration() *Configuration {
-	return &Configuration{
+func loadConfiguration() *Config {
+	return &Config{
 		Common: &Common{
 			GrpcPort: getEnvInt("GRPC_PORT"),
 		},
@@ -73,7 +73,7 @@ func loadConfiguration() *Configuration {
 	}
 }
 
-func Load() *Configuration {
+func Load() *Config {
 	return loadConfiguration()
 }
 

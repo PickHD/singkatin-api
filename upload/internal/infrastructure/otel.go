@@ -17,7 +17,7 @@ type TracerProvider struct {
 	tracer *trace.TracerProvider
 }
 
-func NewTracerProvider(ctx context.Context, cfg *config.Configuration) *TracerProvider {
+func NewTracerProvider(ctx context.Context, cfg *config.Config) *TracerProvider {
 	// Create the Jaeger exporter
 	exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(cfg.Tracer.JaegerURL)))
 	if err != nil {

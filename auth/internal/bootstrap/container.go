@@ -36,16 +36,16 @@ func NewContainer(ctx context.Context) (*Container, error) {
 	jwt := infrastructure.NewJWTProvider(cfg)
 
 	// repository
-	healthCheckRepo := repository.NewHealthCheckRepository(ctx, cfg, tracer.Tracer("Auth Repository"), db.GetDatabase(), redis.GetClient())
-	authRepo := repository.NewAuthRepository(ctx, cfg, tracer.Tracer("Auth Repository"), db.GetDatabase(), redis.GetClient())
+	healthCheckRepo := repository.NewHealthCheckRepository(cfg, tracer.Tracer("Auth Repository"), db.GetDatabase(), redis.GetClient())
+	authRepo := repository.NewAuthRepository(cfg, tracer.Tracer("Auth Repository"), db.GetDatabase(), redis.GetClient())
 
 	// service
-	healthCheckSvc := service.NewHealthCheckService(ctx, cfg, tracer.Tracer("Auth Service"), healthCheckRepo)
-	authSvc := service.NewAuthService(ctx, cfg, tracer.Tracer("Auth Service"), mailer, authRepo, jwt)
+	healthCheckSvc := service.NewHealthCheckService(cfg, tracer.Tracer("Auth Service"), healthCheckRepo)
+	authSvc := service.NewAuthService(cfg, tracer.Tracer("Auth Service"), mailer, authRepo, jwt)
 
 	// controller
-	healthCheckController := controller.NewHealthCheckController(ctx, cfg, tracer.Tracer("Auth Controller"), healthCheckSvc)
-	authController := controller.NewAuthController(ctx, cfg, tracer.Tracer("Auth Controller"), authSvc)
+	healthCheckController := controller.NewHealthCheckController(cfg, tracer.Tracer("Auth Controller"), healthCheckSvc)
+	authController := controller.NewAuthController(cfg, tracer.Tracer("Auth Controller"), authSvc)
 
 	logger.Info("AUTH SERVICE RUN SUCCESSFULLY")
 

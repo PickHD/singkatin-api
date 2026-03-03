@@ -25,6 +25,7 @@ type (
 		AppEnv  string
 		AppName string
 		AppID   string
+		BaseURL string
 	}
 
 	Database struct {
@@ -70,6 +71,7 @@ func loadConfiguration() *Config {
 			AppEnv:  getEnv("APP_ENV"),
 			AppName: getEnv("APP_NAME"),
 			AppID:   getEnv("APP_ID"),
+			BaseURL: getEnv("APP_BASE_URL"),
 		},
 		Database: &Database{
 			Port:                 getEnvInt("DB_PORT"),

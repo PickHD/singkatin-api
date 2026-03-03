@@ -19,32 +19,30 @@ type (
 		UploadObject(ctx context.Context, req *model.UploadAvatarRequest) error
 	}
 
-	UploadRepositoryImpl struct {
-		Context context.Context
-		Config  *config.Configuration
-		Tracer  *trace.TracerProvider
-		MinIO   *minio.Client
+	uploadRepositoryImpl struct {
+		Config *config.Config
+		Tracer *trace.TracerProvider
+		MinIO  *minio.Client
 	}
 )
 
 // NewUploadRepository return new instances upload repository
-func NewUploadRepository(ctx context.Context, config *config.Configuration, tracer *trace.TracerProvider, minioCli *minio.Client) *UploadRepositoryImpl {
-	return &UploadRepositoryImpl{
-		Context: ctx,
-		Config:  config,
-		Tracer:  tracer,
-		MinIO:   minioCli,
+func NewUploadRepository(config *config.Config, tracer *trace.TracerProvider, minioCli *minio.Client) UploadRepository {
+	return &uploadRepositoryImpl{
+		Config: config,
+		Tracer: tracer,
+		MinIO:  minioCli,
 	}
 }
 
-func (ur *UploadRepositoryImpl) UploadObject(ctx context.Context, req *model.UploadAvatarRequest) error {
-	tr := ur.Tracer.Tracer("Upload-UploadObject Repository")
-	ctx, span := tr.Start(ctx, "Start UploadObject")
+func (r *uploadRepositoryImpl) UploadObject(ctx context.Context, req *model.UploadAvatarRequest) error {
+	tr := r.Tracer.Tracer("Upload-UploadObject Repository")
+	_, span := tr.Start(ctx, "Start UploadObject")
 	defer span.End()
 
 	b := bytes.NewBuffer(req.Avatars)
 
-	_, err := ur.MinIO.PutObject(ctx, ur.Config.MinIO.Bucket, req.FileName, b,
+	_, err := r.MinIO.PutObject(ctx, r.Config.MinIO.Bucket, req.FileName, b,
 		int64(b.Len()), minio.PutObjectOptions{ContentType: req.ContentType})
 	if err != nil {
 		logger.Errorf("UploadRepositoryImpl.UploadObject PutObject ERROR, %v", err)

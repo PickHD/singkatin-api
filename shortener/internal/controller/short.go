@@ -35,8 +35,7 @@ type (
 
 	// ShortControllerImpl is an app short struct that consists of all the dependencies needed for short controller
 	ShortControllerImpl struct {
-		Context  context.Context
-		Config   *config.Configuration
+		Config   *config.Config
 		Tracer   *trace.TracerProvider
 		ShortSvc service.ShortService
 		shortenerpb.UnimplementedShortenerServiceServer
@@ -44,9 +43,8 @@ type (
 )
 
 // NewShortController return new instances short controller
-func NewShortController(ctx context.Context, config *config.Configuration, tracer *trace.TracerProvider, shortSvc service.ShortService) *ShortControllerImpl {
+func NewShortController(config *config.Config, tracer *trace.TracerProvider, shortSvc service.ShortService) *ShortControllerImpl {
 	return &ShortControllerImpl{
-		Context:  ctx,
 		Config:   config,
 		Tracer:   tracer,
 		ShortSvc: shortSvc,
@@ -85,10 +83,11 @@ func (c *ShortControllerImpl) GetListShortenerByUserID(ctx context.Context, req 
 
 func (c *ShortControllerImpl) ClickShortener(ctx echo.Context) error {
 	tr := c.Tracer.Tracer("Shortener-ClickShortener Controller")
-	_, span := tr.Start(c.Context, "Start ClickShortener")
+	userCtxValue := ctx.Request().Context()
+	userCtxValue, span := tr.Start(userCtxValue, "Start ClickShortener")
 	defer span.End()
 
-	data, err := c.ShortSvc.ClickShort(ctx.Param("short_url"))
+	data, err := c.ShortSvc.ClickShort(userCtxValue, ctx.Param("short_url"))
 	if err != nil {
 		if strings.Contains(err.Error(), string(model.Validation)) {
 			return response.NewResponses[any](ctx, http.StatusBadRequest, err.Error(), ctx.Param("short_url"), err, nil)
@@ -106,7 +105,7 @@ func (c *ShortControllerImpl) ClickShortener(ctx echo.Context) error {
 
 func (c *ShortControllerImpl) ProcessCreateShortUser(ctx context.Context, msg *shortenerpb.CreateShortenerMessage) error {
 	tr := c.Tracer.Tracer("Shortener-ProcessCreateShortUser Controller")
-	_, span := tr.Start(c.Context, "Start ProcessCreateShortUser")
+	ctx, span := tr.Start(ctx, "Start ProcessCreateShortUser")
 	defer span.End()
 
 	req := &model.CreateShortRequest{
@@ -125,7 +124,7 @@ func (c *ShortControllerImpl) ProcessCreateShortUser(ctx context.Context, msg *s
 
 func (c *ShortControllerImpl) ProcessUpdateVisitorCount(ctx context.Context, msg *shortenerpb.UpdateVisitorCountMessage) error {
 	tr := c.Tracer.Tracer("Shortener-ProcessUpdateVisitorCount Controller")
-	_, span := tr.Start(c.Context, "Start ProcessUpdateVisitorCount")
+	ctx, span := tr.Start(ctx, "Start ProcessUpdateVisitorCount")
 	defer span.End()
 
 	req := &model.UpdateVisitorRequest{
@@ -142,7 +141,7 @@ func (c *ShortControllerImpl) ProcessUpdateVisitorCount(ctx context.Context, msg
 
 func (c *ShortControllerImpl) ProcessUpdateShortUser(ctx context.Context, msg *shortenerpb.UpdateShortenerMessage) error {
 	tr := c.Tracer.Tracer("Shortener-ProcessUpdateShortUser Controller")
-	_, span := tr.Start(c.Context, "Start ProcessUpdateShortUser")
+	ctx, span := tr.Start(ctx, "Start ProcessUpdateShortUser")
 	defer span.End()
 
 	req := &model.UpdateShortRequest{
@@ -160,7 +159,7 @@ func (c *ShortControllerImpl) ProcessUpdateShortUser(ctx context.Context, msg *s
 
 func (c *ShortControllerImpl) ProcessDeleteShortUser(ctx context.Context, msg *shortenerpb.DeleteShortenerMessage) error {
 	tr := c.Tracer.Tracer("Shortener-ProcessDeleteShortUser Controller")
-	_, span := tr.Start(c.Context, "Start ProcessDeleteShortUser")
+	ctx, span := tr.Start(ctx, "Start ProcessDeleteShortUser")
 	defer span.End()
 
 	req := &model.DeleteShortRequest{

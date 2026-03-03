@@ -10,7 +10,6 @@ require (
 )
 
 require (
-	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/streadway/amqp v1.0.0
 	go.opentelemetry.io/otel v1.15.1

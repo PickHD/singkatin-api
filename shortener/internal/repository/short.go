@@ -36,10 +36,9 @@ type (
 		DeleteFullURLByKey(ctx context.Context, shortURL string) error
 	}
 
-	// ShortRepositoryImpl is an app short struct that consists of all the dependencies needed for short repository
+	// shortRepositoryImpl is an app short struct that consists of all the dependencies needed for short repository
 	shortRepositoryImpl struct {
-		Context  context.Context
-		Config   *config.Configuration
+		Config   *config.Config
 		Tracer   *trace.TracerProvider
 		DB       *mongo.Database
 		Redis    *redis.Client
@@ -48,9 +47,8 @@ type (
 )
 
 // NewShortRepository return new instances short repository
-func NewShortRepository(ctx context.Context, config *config.Configuration, tracer *trace.TracerProvider, db *mongo.Database, rds *redis.Client, amqp *amqp.Channel) ShortRepository {
+func NewShortRepository(config *config.Config, tracer *trace.TracerProvider, db *mongo.Database, rds *redis.Client, amqp *amqp.Channel) ShortRepository {
 	return &shortRepositoryImpl{
-		Context:  ctx,
 		Config:   config,
 		Tracer:   tracer,
 		DB:       db,

@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"context"
 	"net/http"
 
 	"singkatin-api/auth/internal/config"
@@ -20,7 +19,6 @@ type (
 
 	// healthCheckControllerImpl is an app health check struct that consists of all the dependencies needed for health check controller
 	healthCheckControllerImpl struct {
-		Context        context.Context
 		Config         *config.Config
 		Tracer         *trace.TracerProvider
 		HealthCheckSvc service.HealthCheckService
@@ -28,9 +26,8 @@ type (
 )
 
 // NewHealthCheckController return new instances health check controller
-func NewHealthCheckController(ctx context.Context, config *config.Config, tracer *trace.TracerProvider, healthCheckSvc service.HealthCheckService) HealthCheckController {
+func NewHealthCheckController(config *config.Config, tracer *trace.TracerProvider, healthCheckSvc service.HealthCheckService) HealthCheckController {
 	return &healthCheckControllerImpl{
-		Context:        ctx,
 		Config:         config,
 		Tracer:         tracer,
 		HealthCheckSvc: healthCheckSvc,
@@ -42,7 +39,7 @@ func (c *healthCheckControllerImpl) Check(ctx *gin.Context) {
 	_, span := tr.Start(ctx, "Start Check")
 	defer span.End()
 
-	ok, err := c.HealthCheckSvc.Check()
+	ok, err := c.HealthCheckSvc.Check(ctx)
 	if err != nil || !ok {
 		response.NewResponses[any](ctx, http.StatusInternalServerError, "Not OK", ok, err, nil)
 	}

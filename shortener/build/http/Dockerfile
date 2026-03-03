@@ -17,4 +17,6 @@ WORKDIR /app
 COPY --from=builder ./shortener/.env ./.env
 COPY --from=builder ./shortener/shortener-service .
 
+EXPOSE 8081
+
 ENTRYPOINT ["./shortener-service","http"]

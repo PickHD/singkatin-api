@@ -12,32 +12,30 @@ import (
 type (
 	// HealthCheckService is an interface that has all the function to be implemented inside health check service
 	HealthCheckService interface {
-		Check() (bool, error)
+		Check(ctx context.Context) (bool, error)
 	}
 
 	// healthCheckServiceImpl is an app health check struct that consists of all the dependencies needed for health check service
 	healthCheckServiceImpl struct {
-		Context         context.Context
-		Config          *config.Configuration
+		Config          *config.Config
 		Tracer          *trace.TracerProvider
 		HealthCheckRepo repository.HealthCheckRepository
 	}
 )
 
 // NewHealthCheckService return new instances health check service
-func NewHealthCheckService(ctx context.Context, config *config.Configuration, tracer *trace.TracerProvider, healthCheckRepo repository.HealthCheckRepository) HealthCheckService {
+func NewHealthCheckService(config *config.Config, tracer *trace.TracerProvider, healthCheckRepo repository.HealthCheckRepository) HealthCheckService {
 	return &healthCheckServiceImpl{
-		Context:         ctx,
 		Config:          config,
 		Tracer:          tracer,
 		HealthCheckRepo: healthCheckRepo,
 	}
 }
 
-func (s *healthCheckServiceImpl) Check() (bool, error) {
+func (s *healthCheckServiceImpl) Check(ctx context.Context) (bool, error) {
 	tr := s.Tracer.Tracer("Shortener-Check Service")
-	_, span := tr.Start(s.Context, "Start Check")
+	_, span := tr.Start(ctx, "Start Check")
 	defer span.End()
 
-	return s.HealthCheckRepo.Check()
+	return s.HealthCheckRepo.Check(ctx)
 }

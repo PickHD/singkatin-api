@@ -13,7 +13,7 @@ type RedisConnectionProvider struct {
 	client *redis.Client
 }
 
-func NewRedisConnection(ctx context.Context, cfg *config.Configuration) *RedisConnectionProvider {
+func NewRedisConnection(ctx context.Context, cfg *config.Config) *RedisConnectionProvider {
 	client := redis.NewClient(&redis.Options{
 		Addr:     fmt.Sprintf("%s:%d", cfg.Redis.Host, cfg.Redis.Port),
 		Password: "", // no password set

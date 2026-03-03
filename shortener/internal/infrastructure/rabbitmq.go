@@ -16,7 +16,7 @@ type RabbitMQConnectionProvider struct {
 	client *amqp.Channel
 }
 
-func NewRabbitMQConnection(ctx context.Context, cfg *config.Configuration) *RabbitMQConnectionProvider {
+func NewRabbitMQConnection(ctx context.Context, cfg *config.Config) *RabbitMQConnectionProvider {
 	amqpConn, err := amqp.Dial(cfg.RabbitMQ.ConnURL)
 	if err != nil {
 		logger.Errorf("failed dial RabbitMQ, error : %v", err)
@@ -58,7 +58,7 @@ func (r *RabbitMQConnectionProvider) Close() error {
 }
 
 // ConsumeMessages generic function to consume message from defined param queues
-func (r *RabbitMQConnectionProvider) ConsumeMessages(ctx context.Context, cfg *config.Configuration, shortController controller.ShortController, queueName string) {
+func (r *RabbitMQConnectionProvider) ConsumeMessages(ctx context.Context, cfg *config.Config, shortController controller.ShortController, queueName string) {
 	// Subscribing to queues for getting messages.
 	messages, err := r.client.Consume(
 		queueName, // queue name

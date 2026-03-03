@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"context"
 	"net/http"
 	"strings"
 
@@ -27,7 +26,6 @@ type (
 
 	// authControllerImpl is an app auth struct that consists of all the dependencies needed for auth controller
 	authControllerImpl struct {
-		Context context.Context
 		Config  *config.Config
 		Tracer  *trace.TracerProvider
 		AuthSvc service.AuthService
@@ -35,9 +33,8 @@ type (
 )
 
 // NewAuthController return new instances auth controller
-func NewAuthController(ctx context.Context, config *config.Config, tracer *trace.TracerProvider, authSvc service.AuthService) AuthController {
+func NewAuthController(config *config.Config, tracer *trace.TracerProvider, authSvc service.AuthService) AuthController {
 	return &authControllerImpl{
-		Context: ctx,
 		Config:  config,
 		Tracer:  tracer,
 		AuthSvc: authSvc,

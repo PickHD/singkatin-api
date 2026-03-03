@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"context"
 	"strings"
 
 	"singkatin-api/user/pkg/response"
@@ -29,7 +28,6 @@ type (
 
 	// userControllerImpl is an app user struct that consists of all the dependencies needed for user controller
 	userControllerImpl struct {
-		Context context.Context
 		Config  *config.Config
 		Tracer  *trace.TracerProvider
 		UserSvc service.UserService
@@ -37,9 +35,8 @@ type (
 )
 
 // NewUserController return new instances user controller
-func NewUserController(ctx context.Context, config *config.Config, tracer *trace.TracerProvider, userSvc service.UserService) UserController {
+func NewUserController(config *config.Config, tracer *trace.TracerProvider, userSvc service.UserService) UserController {
 	return &userControllerImpl{
-		Context: ctx,
 		Config:  config,
 		Tracer:  tracer,
 		UserSvc: userSvc,
@@ -48,7 +45,8 @@ func NewUserController(ctx context.Context, config *config.Config, tracer *trace
 
 func (c *userControllerImpl) Profile(ctx *fiber.Ctx) error {
 	tr := c.Tracer.Tracer("User-Profile Controller")
-	_, span := tr.Start(c.Context, "Start Profile")
+	userCtxValue := ctx.UserContext()
+	userCtxValue, span := tr.Start(userCtxValue, "Start Profile")
 	defer span.End()
 
 	userCtx, err := utils.GetUserContext(ctx)
@@ -56,7 +54,7 @@ func (c *userControllerImpl) Profile(ctx *fiber.Ctx) error {
 		return response.NewResponses[any](ctx, fiber.StatusInternalServerError, err.Error(), nil, err, nil)
 	}
 
-	detail, err := c.UserSvc.GetUserDetail(userCtx.Email)
+	detail, err := c.UserSvc.GetUserDetail(userCtxValue, userCtx.Email)
 	if err != nil {
 		if strings.Contains(err.Error(), string(model.NotFound)) {
 			return response.NewResponses[any](ctx, fiber.StatusNotFound, err.Error(), nil, err, nil)
@@ -70,7 +68,8 @@ func (c *userControllerImpl) Profile(ctx *fiber.Ctx) error {
 
 func (c *userControllerImpl) Dashboard(ctx *fiber.Ctx) error {
 	tr := c.Tracer.Tracer("User-Dashboard Controller")
-	_, span := tr.Start(c.Context, "Start Dashboard")
+	userCtxValue := ctx.UserContext()
+	userCtxValue, span := tr.Start(userCtxValue, "Start Dashboard")
 	defer span.End()
 
 	userCtx, err := utils.GetUserContext(ctx)
@@ -78,7 +77,7 @@ func (c *userControllerImpl) Dashboard(ctx *fiber.Ctx) error {
 		return response.NewResponses[any](ctx, fiber.StatusInternalServerError, err.Error(), nil, err, nil)
 	}
 
-	detail, err := c.UserSvc.GetUserShorts(userCtx.UserID)
+	detail, err := c.UserSvc.GetUserShorts(userCtxValue, userCtx.UserID)
 	if err != nil {
 		return response.NewResponses[any](ctx, fiber.StatusInternalServerError, err.Error(), nil, err, nil)
 	}
@@ -88,7 +87,8 @@ func (c *userControllerImpl) Dashboard(ctx *fiber.Ctx) error {
 
 func (c *userControllerImpl) GenerateShort(ctx *fiber.Ctx) error {
 	tr := c.Tracer.Tracer("User-GenerateShort Controller")
-	_, span := tr.Start(c.Context, "Start GenerateShort")
+	userCtxValue := ctx.UserContext()
+	userCtxValue, span := tr.Start(userCtxValue, "Start GenerateShort")
 	defer span.End()
 
 	var req model.ShortUserRequest
@@ -102,7 +102,7 @@ func (c *userControllerImpl) GenerateShort(ctx *fiber.Ctx) error {
 		return response.NewResponses[any](ctx, fiber.StatusBadRequest, err.Error(), nil, err, nil)
 	}
 
-	newShort, err := c.UserSvc.GenerateUserShorts(userCtx.UserID, &req)
+	newShort, err := c.UserSvc.GenerateUserShorts(userCtxValue, userCtx.UserID, &req)
 	if err != nil {
 		return response.NewResponses[any](ctx, fiber.StatusInternalServerError, err.Error(), nil, err, nil)
 	}
@@ -112,7 +112,8 @@ func (c *userControllerImpl) GenerateShort(ctx *fiber.Ctx) error {
 
 func (c *userControllerImpl) EditProfile(ctx *fiber.Ctx) error {
 	tr := c.Tracer.Tracer("User-EditProfile Controller")
-	_, span := tr.Start(c.Context, "Start EditProfile")
+	userCtxValue := ctx.UserContext()
+	userCtxValue, span := tr.Start(userCtxValue, "Start EditProfile")
 	defer span.End()
 
 	var req model.EditProfileRequest
@@ -126,7 +127,7 @@ func (c *userControllerImpl) EditProfile(ctx *fiber.Ctx) error {
 		return response.NewResponses[any](ctx, fiber.StatusBadRequest, err.Error(), nil, err, nil)
 	}
 
-	err = c.UserSvc.UpdateUserProfile(userCtx.UserID, &req)
+	err = c.UserSvc.UpdateUserProfile(userCtxValue, userCtx.UserID, &req)
 	if err != nil {
 		if strings.Contains(err.Error(), string(model.Validation)) {
 			return response.NewResponses[any](ctx, fiber.StatusBadRequest, err.Error(), nil, err, nil)
@@ -140,7 +141,8 @@ func (c *userControllerImpl) EditProfile(ctx *fiber.Ctx) error {
 
 func (c *userControllerImpl) UploadAvatar(ctx *fiber.Ctx) error {
 	tr := c.Tracer.Tracer("User-UploadAvatar Controller")
-	_, span := tr.Start(c.Context, "Start UploadAvatar")
+	userCtxValue := ctx.UserContext()
+	_, span := tr.Start(userCtxValue, "Start UploadAvatar")
 	defer span.End()
 
 	userCtx, err := utils.GetUserContext(ctx)
@@ -158,7 +160,8 @@ func (c *userControllerImpl) UploadAvatar(ctx *fiber.Ctx) error {
 
 func (c *userControllerImpl) UpdateShort(ctx *fiber.Ctx) error {
 	tr := c.Tracer.Tracer("User-UpdateShort Controller")
-	_, span := tr.Start(c.Context, "Start UpdateShort")
+	userCtxValue := ctx.UserContext()
+	userCtxValue, span := tr.Start(userCtxValue, "Start UpdateShort")
 	defer span.End()
 
 	var req model.ShortUserRequest
@@ -172,7 +175,7 @@ func (c *userControllerImpl) UpdateShort(ctx *fiber.Ctx) error {
 		return response.NewResponses[any](ctx, fiber.StatusBadRequest, "id required", model.NewError(model.Validation, "ID Required"), nil, nil)
 	}
 
-	_, err := c.UserSvc.UpdateUserShorts(shortID, &req)
+	_, err := c.UserSvc.UpdateUserShorts(userCtxValue, shortID, &req)
 	if err != nil {
 		return response.NewResponses[any](ctx, fiber.StatusInternalServerError, err.Error(), nil, err, nil)
 	}
@@ -182,7 +185,8 @@ func (c *userControllerImpl) UpdateShort(ctx *fiber.Ctx) error {
 
 func (c *userControllerImpl) DeleteShort(ctx *fiber.Ctx) error {
 	tr := c.Tracer.Tracer("User-DeleteShort Controller")
-	_, span := tr.Start(c.Context, "Start DeleteShort")
+	userCtxValue := ctx.UserContext()
+	userCtxValue, span := tr.Start(userCtxValue, "Start DeleteShort")
 	defer span.End()
 
 	shortID := ctx.Params("id", "")
@@ -190,7 +194,7 @@ func (c *userControllerImpl) DeleteShort(ctx *fiber.Ctx) error {
 		return response.NewResponses[any](ctx, fiber.StatusBadRequest, "id required", model.NewError(model.Validation, "ID Required"), nil, nil)
 	}
 
-	_, err := c.UserSvc.DeleteUserShorts(shortID)
+	_, err := c.UserSvc.DeleteUserShorts(userCtxValue, shortID)
 	if err != nil {
 		return response.NewResponses[any](ctx, fiber.StatusInternalServerError, err.Error(), nil, err, nil)
 	}

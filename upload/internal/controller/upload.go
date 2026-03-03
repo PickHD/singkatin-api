@@ -17,27 +17,25 @@ type (
 		ProcessUploadAvatarUser(ctx context.Context, msg *uploadpb.UploadAvatarMessage) error
 	}
 
-	UploadControllerImpl struct {
-		Context   context.Context
-		Config    *config.Configuration
+	uploadControllerImpl struct {
+		Config    *config.Config
 		Tracer    *trace.TracerProvider
 		UploadSvc service.UploadService
 	}
 )
 
 // NewUploadController return new instances upload controller
-func NewUploadController(ctx context.Context, config *config.Configuration, tracer *trace.TracerProvider, uploadSvc service.UploadService) *UploadControllerImpl {
-	return &UploadControllerImpl{
-		Context:   ctx,
+func NewUploadController(config *config.Config, tracer *trace.TracerProvider, uploadSvc service.UploadService) UploadController {
+	return &uploadControllerImpl{
 		Config:    config,
 		Tracer:    tracer,
 		UploadSvc: uploadSvc,
 	}
 }
 
-func (uc *UploadControllerImpl) ProcessUploadAvatarUser(ctx context.Context, msg *uploadpb.UploadAvatarMessage) error {
-	tr := uc.Tracer.Tracer("Upload-ProcessUploadAvatarUser Controller")
-	_, span := tr.Start(uc.Context, "Start ProcessUploadAvatarUser")
+func (c *uploadControllerImpl) ProcessUploadAvatarUser(ctx context.Context, msg *uploadpb.UploadAvatarMessage) error {
+	tr := c.Tracer.Tracer("Upload-ProcessUploadAvatarUser Controller")
+	_, span := tr.Start(ctx, "Start ProcessUploadAvatarUser")
 	defer span.End()
 
 	req := &model.UploadAvatarRequest{
@@ -46,7 +44,7 @@ func (uc *UploadControllerImpl) ProcessUploadAvatarUser(ctx context.Context, msg
 		Avatars:     msg.GetAvatars(),
 	}
 
-	err := uc.UploadSvc.UploadAvatarUser(ctx, req)
+	err := c.UploadSvc.UploadAvatarUser(ctx, req)
 	if err != nil {
 		return err
 	}

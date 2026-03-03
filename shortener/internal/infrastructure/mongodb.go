@@ -14,7 +14,7 @@ type MongoConnectionProvider struct {
 	db *mongo.Database
 }
 
-func NewMongoConnection(ctx context.Context, cfg *config.Configuration) *MongoConnectionProvider {
+func NewMongoConnection(ctx context.Context, cfg *config.Config) *MongoConnectionProvider {
 	mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%d", cfg.Database.Host, cfg.Database.Port)))
 	if err != nil {
 		logger.Errorf("failed connect mongoDB, error: %v", err)

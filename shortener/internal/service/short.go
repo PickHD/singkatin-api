@@ -19,7 +19,7 @@ type (
 	ShortService interface {
 		GetListShortenerByUserID(ctx context.Context, userID string) ([]model.Short, error)
 		CreateShort(ctx context.Context, req *model.CreateShortRequest) error
-		ClickShort(shortURL string) (*model.ClickShortResponse, error)
+		ClickShort(ctx context.Context, shortURL string) (*model.ClickShortResponse, error)
 		UpdateVisitorShort(ctx context.Context, req *model.UpdateVisitorRequest) error
 		UpdateShort(ctx context.Context, req *model.UpdateShortRequest) error
 		DeleteShort(ctx context.Context, req *model.DeleteShortRequest) error
@@ -27,17 +27,15 @@ type (
 
 	// shortServiceImpl is an app short struct that consists of all the dependencies needed for short repository
 	shortServiceImpl struct {
-		Context   context.Context
-		Config    *config.Configuration
+		Config    *config.Config
 		Tracer    *trace.TracerProvider
 		ShortRepo repository.ShortRepository
 	}
 )
 
 // NewShortService return new instances short service
-func NewShortService(ctx context.Context, config *config.Configuration, tracer *trace.TracerProvider, shortRepo repository.ShortRepository) ShortService {
+func NewShortService(config *config.Config, tracer *trace.TracerProvider, shortRepo repository.ShortRepository) ShortService {
 	return &shortServiceImpl{
-		Context:   ctx,
 		Config:    config,
 		Tracer:    tracer,
 		ShortRepo: shortRepo,
@@ -74,13 +72,13 @@ func (s *shortServiceImpl) CreateShort(ctx context.Context, req *model.CreateSho
 	})
 }
 
-func (s *shortServiceImpl) ClickShort(shortURL string) (*model.ClickShortResponse, error) {
+func (s *shortServiceImpl) ClickShort(ctx context.Context, shortURL string) (*model.ClickShortResponse, error) {
 	var (
 		redisTTLDuration = time.Minute * time.Duration(s.Config.Redis.TTL)
 	)
 
 	tr := s.Tracer.Tracer("Shortener-ClickShort Service")
-	ctx, span := tr.Start(s.Context, "Start ClickShort")
+	ctx, span := tr.Start(ctx, "Start ClickShort")
 	defer span.End()
 
 	req := &model.UpdateVisitorRequest{ShortURL: shortURL}
@@ -95,17 +93,17 @@ func (s *shortServiceImpl) ClickShort(shortURL string) (*model.ClickShortRespons
 		if err == redis.Nil {
 			logger.Info("get data from default databases....")
 
-			data, err := s.ShortRepo.GetByShortURL(s.Context, req.ShortURL)
+			data, err := s.ShortRepo.GetByShortURL(ctx, req.ShortURL)
 			if err != nil {
 				return nil, err
 			}
 
-			err = s.ShortRepo.SetFullURLByKey(s.Context, req.ShortURL, data.FullURL, redisTTLDuration)
+			err = s.ShortRepo.SetFullURLByKey(ctx, req.ShortURL, data.FullURL, redisTTLDuration)
 			if err != nil {
 				return nil, err
 			}
 
-			err = s.ShortRepo.PublishUpdateVisitorCount(s.Context, req)
+			err = s.ShortRepo.PublishUpdateVisitorCount(ctx, req)
 			if err != nil {
 				return nil, err
 			}

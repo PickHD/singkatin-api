@@ -18,6 +18,13 @@ const (
 	consumerMode = "consumer"
 )
 
+// @title           Singkatin API
+// @version         1.0
+// @description     URL Shortener API - Upload Services
+// @contact.name    Taufik Januar
+// @contact.email   taufikjanuar35@gmail.com
+// @license.name    MIT
+// @host            localhost:8083
 func main() {
 	envPaths := []string{
 		"./.env", "./upload/.env",

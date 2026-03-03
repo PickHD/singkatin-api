@@ -16,28 +16,26 @@ type (
 		UploadAvatarUser(ctx context.Context, req *model.UploadAvatarRequest) error
 	}
 
-	UploadServiceImpl struct {
-		Context    context.Context
-		Config     *config.Configuration
+	uploadServiceImpl struct {
+		Config     *config.Config
 		Tracer     *trace.TracerProvider
 		UploadRepo repository.UploadRepository
 	}
 )
 
 // NewUploadService return new instances upload repository
-func NewUploadService(ctx context.Context, config *config.Configuration, tracer *trace.TracerProvider, uploadRepo repository.UploadRepository) *UploadServiceImpl {
-	return &UploadServiceImpl{
-		Context:    ctx,
+func NewUploadService(config *config.Config, tracer *trace.TracerProvider, uploadRepo repository.UploadRepository) UploadService {
+	return &uploadServiceImpl{
 		Config:     config,
 		Tracer:     tracer,
 		UploadRepo: uploadRepo,
 	}
 }
 
-func (us *UploadServiceImpl) UploadAvatarUser(ctx context.Context, req *model.UploadAvatarRequest) error {
-	tr := us.Tracer.Tracer("Upload-UploadAvatarUser Service")
-	ctx, span := tr.Start(ctx, "Start UploadObject")
+func (s *uploadServiceImpl) UploadAvatarUser(ctx context.Context, req *model.UploadAvatarRequest) error {
+	tr := s.Tracer.Tracer("Upload-UploadAvatarUser Service")
+	_, span := tr.Start(ctx, "Start UploadObject")
 	defer span.End()
 
-	return us.UploadRepo.UploadObject(ctx, req)
+	return s.UploadRepo.UploadObject(ctx, req)
 }

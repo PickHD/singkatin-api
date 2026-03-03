@@ -53,16 +53,16 @@ func NewContainer(ctx context.Context) (*Container, error) {
 	shortClient := shortenerpb.NewShortenerServiceClient(grpcConn)
 
 	// repository
-	healthCheckRepo := repository.NewHealthCheckRepository(ctx, cfg, tracer.Tracer("Health Check Repository"), db.GetDatabase())
-	userRepo := repository.NewUserRepository(ctx, cfg, tracer.Tracer("User Repository"), db.GetDatabase(), rabbitmq.GetClient())
+	healthCheckRepo := repository.NewHealthCheckRepository(cfg, tracer.Tracer("Health Check Repository"), db.GetDatabase())
+	userRepo := repository.NewUserRepository(cfg, tracer.Tracer("User Repository"), db.GetDatabase(), rabbitmq.GetClient())
 
 	// service
-	healthCheckSvc := service.NewHealthCheckService(ctx, cfg, tracer.Tracer("Health Check Service"), healthCheckRepo)
-	userSvc := service.NewUserService(ctx, cfg, tracer.Tracer("User Service"), userRepo, shortClient)
+	healthCheckSvc := service.NewHealthCheckService(cfg, tracer.Tracer("Health Check Service"), healthCheckRepo)
+	userSvc := service.NewUserService(cfg, tracer.Tracer("User Service"), userRepo, shortClient)
 
 	// controller
-	healthCheckController := controller.NewHealthCheckController(ctx, cfg, tracer.Tracer("Health Check Controller"), healthCheckSvc)
-	userController := controller.NewUserController(ctx, cfg, tracer.Tracer("User Controller"), userSvc)
+	healthCheckController := controller.NewHealthCheckController(cfg, tracer.Tracer("Health Check Controller"), healthCheckSvc)
+	userController := controller.NewUserController(cfg, tracer.Tracer("User Controller"), userSvc)
 
 	// middleware
 	authMiddleware := middleware.NewAuthMiddleware(jwt)

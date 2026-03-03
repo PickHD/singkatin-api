@@ -31,7 +31,6 @@ type (
 
 	// userRepositoryImpl is an app user struct that consists of all the dependencies needed for user repository
 	userRepositoryImpl struct {
-		Context  context.Context
 		Config   *config.Config
 		Tracer   *trace.TracerProvider
 		DB       *mongo.Database
@@ -40,9 +39,8 @@ type (
 )
 
 // NewUserRepository return new instances user repository
-func NewUserRepository(ctx context.Context, config *config.Config, tracer *trace.TracerProvider, db *mongo.Database, amqp *amqp.Channel) UserRepository {
+func NewUserRepository(config *config.Config, tracer *trace.TracerProvider, db *mongo.Database, amqp *amqp.Channel) UserRepository {
 	return &userRepositoryImpl{
-		Context:  ctx,
 		Config:   config,
 		Tracer:   tracer,
 		DB:       db,

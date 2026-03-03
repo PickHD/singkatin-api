@@ -16,7 +16,7 @@ import (
 // Container ...
 type Container struct {
 	Context  context.Context
-	Config   *config.Configuration
+	Config   *config.Config
 	DB       *infrastructure.MongoConnectionProvider
 	Redis    *infrastructure.RedisConnectionProvider
 	RabbitMQ *infrastructure.RabbitMQConnectionProvider
@@ -38,16 +38,16 @@ func NewContainer(ctx context.Context) (*Container, error) {
 	grpc := grpc.NewServer()
 
 	// repository
-	healthCheckRepo := repository.NewHealthCheckRepository(ctx, cfg, tracer.Tracer("Shortener Repository"), db.GetDatabase(), redis.GetClient())
-	shortRepo := repository.NewShortRepository(ctx, cfg, tracer.Tracer("Shortener Repository"), db.GetDatabase(), redis.GetClient(), rabbitmq.GetClient())
+	healthCheckRepo := repository.NewHealthCheckRepository(cfg, tracer.Tracer("Shortener Repository"), db.GetDatabase(), redis.GetClient())
+	shortRepo := repository.NewShortRepository(cfg, tracer.Tracer("Shortener Repository"), db.GetDatabase(), redis.GetClient(), rabbitmq.GetClient())
 
 	// service
-	healthCheckSvc := service.NewHealthCheckService(ctx, cfg, tracer.Tracer("Shortener Service"), healthCheckRepo)
-	shortSvc := service.NewShortService(ctx, cfg, tracer.Tracer("Shortener Service"), shortRepo)
+	healthCheckSvc := service.NewHealthCheckService(cfg, tracer.Tracer("Shortener Service"), healthCheckRepo)
+	shortSvc := service.NewShortService(cfg, tracer.Tracer("Shortener Service"), shortRepo)
 
 	// controller
-	healthCheckController := controller.NewHealthCheckController(ctx, cfg, tracer.Tracer("Shortener Controller"), healthCheckSvc)
-	shortController := controller.NewShortController(ctx, cfg, tracer.Tracer("Shortener Controller"), shortSvc)
+	healthCheckController := controller.NewHealthCheckController(cfg, tracer.Tracer("Shortener Controller"), healthCheckSvc)
+	shortController := controller.NewShortController(cfg, tracer.Tracer("Shortener Controller"), shortSvc)
 
 	logger.Info("SHORTENER SERVICE RUN SUCCESSFULLY")
 

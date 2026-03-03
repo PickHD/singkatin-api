@@ -14,7 +14,7 @@ import (
 // Container ...
 type Container struct {
 	Context  context.Context
-	Config   *config.Configuration
+	Config   *config.Config
 	RabbitMQ *infrastructure.RabbitMQConnectionProvider
 	Tracer   *infrastructure.TracerProvider
 	MinIO    *infrastructure.MinIOConnectionProvider
@@ -31,13 +31,13 @@ func NewContainer(ctx context.Context) (*Container, error) {
 	minioClient := infrastructure.NewMinIOConnection(ctx, cfg)
 
 	// repository
-	uploadRepo := repository.NewUploadRepository(ctx, cfg, tracer.Tracer("Upload Repository"), minioClient.GetClient())
+	uploadRepo := repository.NewUploadRepository(cfg, tracer.Tracer("Upload Repository"), minioClient.GetClient())
 
 	// service
-	uploadSvc := service.NewUploadService(ctx, cfg, tracer.Tracer("Upload Service"), uploadRepo)
+	uploadSvc := service.NewUploadService(cfg, tracer.Tracer("Upload Service"), uploadRepo)
 
 	// controller
-	uploadController := controller.NewUploadController(ctx, cfg, tracer.Tracer("Upload Controller"), uploadSvc)
+	uploadController := controller.NewUploadController(cfg, tracer.Tracer("Upload Controller"), uploadSvc)
 
 	logger.Info("UPLOAD SERVICE RUN SUCCESSFULLY")
 

@@ -14,13 +14,12 @@ import (
 type (
 	// HealthCheckRepository is an interface that has all the function to be implemented inside health check repository
 	HealthCheckRepository interface {
-		Check() (bool, error)
+		Check(ctx context.Context) (bool, error)
 	}
 
 	// healthCheckRepositoryImpl is an app health check struct that consists of all the dependencies needed for health check repository
 	healthCheckRepositoryImpl struct {
-		Context context.Context
-		Config  *config.Configuration
+		Config  *config.Config
 		Tracer  *trace.TracerProvider
 		DB      *mongo.Database
 		Redis   *redis.Client
@@ -28,9 +27,8 @@ type (
 )
 
 // NewHealthCheckRepository return new instances health check repository
-func NewHealthCheckRepository(ctx context.Context, config *config.Configuration, tracer *trace.TracerProvider, db *mongo.Database, redis *redis.Client) HealthCheckRepository {
+func NewHealthCheckRepository(config *config.Config, tracer *trace.TracerProvider, db *mongo.Database, redis *redis.Client) HealthCheckRepository {
 	return &healthCheckRepositoryImpl{
-		Context: ctx,
 		Config:  config,
 		Tracer:  tracer,
 		DB:      db,
@@ -38,17 +36,17 @@ func NewHealthCheckRepository(ctx context.Context, config *config.Configuration,
 	}
 }
 
-func (r *healthCheckRepositoryImpl) Check() (bool, error) {
+func (r *healthCheckRepositoryImpl) Check(ctx context.Context) (bool, error) {
 	tr := r.Tracer.Tracer("Shortener-Check Repository")
-	_, span := tr.Start(r.Context, "Start Check")
+	_, span := tr.Start(ctx, "Start Check")
 	defer span.End()
 
-	if err := r.DB.Client().Ping(r.Context, nil); err != nil {
+	if err := r.DB.Client().Ping(ctx, nil); err != nil {
 		logger.Error("HealthCheckRepositoryImpl.Check() Ping DB ERROR, ", err)
 		return false, nil
 	}
 
-	if err := r.Redis.Ping(r.Context).Err(); err != nil {
+	if err := r.Redis.Ping(ctx).Err(); err != nil {
 		logger.Error("HealthCheckRepositoryImpl.Check() Ping Redis ERROR, ", err)
 		return false, nil
 	}

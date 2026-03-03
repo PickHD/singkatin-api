@@ -29,7 +29,6 @@ type (
 
 	// authRepositoryImpl is an app auth struct that consists of all the dependencies needed for auth repository
 	authRepositoryImpl struct {
-		Context context.Context
 		Config  *config.Config
 		Tracer  *trace.TracerProvider
 		DB      *mongo.Database
@@ -38,9 +37,8 @@ type (
 )
 
 // NewAuthRepository return new instances auth repository
-func NewAuthRepository(ctx context.Context, config *config.Config, tracer *trace.TracerProvider, db *mongo.Database, rds *redis.Client) AuthRepository {
+func NewAuthRepository(config *config.Config, tracer *trace.TracerProvider, db *mongo.Database, rds *redis.Client) AuthRepository {
 	return &authRepositoryImpl{
-		Context: ctx,
 		Config:  config,
 		Tracer:  tracer,
 		DB:      db,

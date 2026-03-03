@@ -14,7 +14,7 @@ type MinIOConnectionProvider struct {
 	client *minio.Client
 }
 
-func NewMinIOConnection(ctx context.Context, cfg *config.Configuration) *MinIOConnectionProvider {
+func NewMinIOConnection(ctx context.Context, cfg *config.Config) *MinIOConnectionProvider {
 	minioClient, err := minio.New(cfg.MinIO.Endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(cfg.MinIO.AccessKey, cfg.MinIO.SecretKey, ""),
 		Secure: cfg.MinIO.UseSSL,

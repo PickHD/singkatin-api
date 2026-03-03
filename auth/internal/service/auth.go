@@ -28,7 +28,6 @@ type (
 
 	// authServiceImpl is an app auth struct that consists of all the dependencies needed for auth service
 	authServiceImpl struct {
-		Context  context.Context
 		Config   *config.Config
 		Tracer   *trace.TracerProvider
 		Mailer   *infrastructure.EmailProvider
@@ -38,9 +37,8 @@ type (
 )
 
 // NewAuthService return new instances auth service
-func NewAuthService(ctx context.Context, config *config.Config, tracer *trace.TracerProvider, mailer *infrastructure.EmailProvider, authRepo repository.AuthRepository, jwt *infrastructure.JwtProvider) AuthService {
+func NewAuthService(config *config.Config, tracer *trace.TracerProvider, mailer *infrastructure.EmailProvider, authRepo repository.AuthRepository, jwt *infrastructure.JwtProvider) AuthService {
 	return &authServiceImpl{
-		Context:  ctx,
 		Config:   config,
 		Tracer:   tracer,
 		Mailer:   mailer,
@@ -82,7 +80,7 @@ func (s *authServiceImpl) RegisterUser(ctx context.Context, req *model.RegisterR
 		return nil, err
 	}
 
-	emailLink := fmt.Sprintf("<h1><a href='%s'>%s</a><h1>", "http://localhost:8080/v1/register/verify?code="+codeVerification, "Verification Link")
+	emailLink := fmt.Sprintf("<h1><a href='%s'>%s</a><h1>", s.Config.Server.BaseURL+"/v1/register/verify?code="+codeVerification, "Verification Link")
 
 	err = s.Mailer.SendEmail(ctx, req.Email, "Registration Confirmations", emailLink)
 	if err != nil {
@@ -179,7 +177,7 @@ func (s *authServiceImpl) ForgotPasswordUser(ctx context.Context, req *model.For
 		return err
 	}
 
-	emailLink := fmt.Sprintf("<h1><a href='%s'>%s</a><h1>", "http://localhost:8080/v1/forgot-password/verify?code="+codeVerification, "Verification Link")
+	emailLink := fmt.Sprintf("<h1><a href='%s'>%s</a><h1>", s.Config.Server.BaseURL+"/v1/forgot-password/verify?code="+codeVerification, "Verification Link")
 
 	err = s.Mailer.SendEmail(ctx, req.Email, "Forgot Password Confirmations", emailLink)
 	if err != nil {
@@ -227,12 +225,12 @@ func (s *authServiceImpl) ResetPasswordUser(ctx context.Context, req *model.Rese
 }
 
 func validateRegisterUser(req *model.RegisterRequest) error {
-	if len(req.FullName) < 3 {
-		return model.NewError(model.Validation, "full name must more than 3")
-	}
-
 	if req.FullName == "" {
 		return model.NewError(model.Validation, "full name required")
+	}
+
+	if len(req.FullName) < 3 {
+		return model.NewError(model.Validation, "full name must have at least 3 characters")
 	}
 
 	if req.Password == "" {

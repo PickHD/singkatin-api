@@ -18,8 +18,8 @@ type (
 		Check(ctx echo.Context) error
 	}
 
-	// HealthCheckControllerImpl is an app health check struct that consists of all the dependencies needed for health check controller
-	HealthCheckControllerImpl struct {
+	// healthCheckControllerImpl is an app health check struct that consists of all the dependencies needed for health check controller
+	healthCheckControllerImpl struct {
 		Context        context.Context
 		Config         *config.Configuration
 		Tracer         *trace.TracerProvider
@@ -28,8 +28,8 @@ type (
 )
 
 // NewHealthCheckController return new instances health check controller
-func NewHealthCheckController(ctx context.Context, config *config.Configuration, tracer *trace.TracerProvider, healthCheckSvc service.HealthCheckService) *HealthCheckControllerImpl {
-	return &HealthCheckControllerImpl{
+func NewHealthCheckController(ctx context.Context, config *config.Configuration, tracer *trace.TracerProvider, healthCheckSvc service.HealthCheckService) HealthCheckController {
+	return &healthCheckControllerImpl{
 		Context:        ctx,
 		Config:         config,
 		Tracer:         tracer,
@@ -37,20 +37,12 @@ func NewHealthCheckController(ctx context.Context, config *config.Configuration,
 	}
 }
 
-// Check godoc
-// @Summary      Checking Health Services
-// @Tags         Health Check
-// @Accept       json
-// @Produce      json
-// @Success      200  {object}  helper.BaseResponse
-// @Failure      500  {object}  helper.BaseResponse
-// @Router       /health-check [get]
-func (hc *HealthCheckControllerImpl) Check(ctx echo.Context) error {
-	tr := hc.Tracer.Tracer("Shortener-Check Controller")
-	_, span := tr.Start(hc.Context, "Start Check")
+func (c *healthCheckControllerImpl) Check(ctx echo.Context) error {
+	tr := c.Tracer.Tracer("Shortener-Check Controller")
+	_, span := tr.Start(c.Context, "Start Check")
 	defer span.End()
 
-	ok, err := hc.HealthCheckSvc.Check()
+	ok, err := c.HealthCheckSvc.Check()
 	if err != nil || !ok {
 		return response.NewResponses[any](ctx, http.StatusInternalServerError, "not OK", ok, err, nil)
 	}

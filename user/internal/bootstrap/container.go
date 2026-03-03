@@ -5,6 +5,7 @@ import (
 	"singkatin-api/user/internal/config"
 	"singkatin-api/user/internal/controller"
 	"singkatin-api/user/internal/infrastructure"
+	"singkatin-api/user/internal/middleware"
 	"singkatin-api/user/internal/repository"
 	"singkatin-api/user/internal/service"
 	shortenerpb "singkatin-api/user/pkg/api/v1/proto/shortener"
@@ -23,9 +24,12 @@ type Container struct {
 	Tracer   *infrastructure.TracerProvider
 	Mongo    *infrastructure.MongoConnectionProvider
 	GRPC     *grpc.ClientConn
+	JWT      *infrastructure.JwtProvider
 
 	HealthCheckController controller.HealthCheckController
 	UserController        controller.UserController
+
+	AuthMiddleware *middleware.AuthMiddleware
 }
 
 // NewContainer configuring dependencies app needed
@@ -35,6 +39,7 @@ func NewContainer(ctx context.Context) (*Container, error) {
 	db := infrastructure.NewMongoConnection(ctx, cfg)
 	rabbitmq := infrastructure.NewRabbitMQConnection(ctx, cfg)
 	tracer := infrastructure.NewTracerProvider(ctx, cfg)
+	jwt := infrastructure.NewJWTProvider(cfg)
 
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -59,6 +64,9 @@ func NewContainer(ctx context.Context) (*Container, error) {
 	healthCheckController := controller.NewHealthCheckController(ctx, cfg, tracer.Tracer("Health Check Controller"), healthCheckSvc)
 	userController := controller.NewUserController(ctx, cfg, tracer.Tracer("User Controller"), userSvc)
 
+	// middleware
+	authMiddleware := middleware.NewAuthMiddleware(jwt)
+
 	logger.Info("USER SERVICE RUN SUCCESSFULLY")
 
 	return &Container{
@@ -68,9 +76,12 @@ func NewContainer(ctx context.Context) (*Container, error) {
 		RabbitMQ: rabbitmq,
 		Tracer:   tracer,
 		GRPC:     grpcConn,
+		JWT:      jwt,
 
 		HealthCheckController: healthCheckController,
 		UserController:        userController,
+
+		AuthMiddleware: authMiddleware,
 	}, nil
 }
 

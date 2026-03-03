@@ -3,8 +3,8 @@ package repository
 import (
 	"context"
 
-	"singkatin-api/shortener/pkg/logger"
 	"singkatin-api/user/internal/config"
+	"singkatin-api/user/pkg/logger"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.opentelemetry.io/otel/sdk/trace"
@@ -39,7 +39,7 @@ func (h *healthCheckRepositoryImpl) Check(ctx context.Context) (bool, error) {
 	defer span.End()
 
 	if err := h.DB.Client().Ping(ctx, nil); err != nil {
-		logger.Error("HealthCheckRepositoryImpl.Check() Ping DB ERROR, ", err)
+		logger.Errorf("HealthCheckRepositoryImpl.Check() Ping DB ERROR, %v", err)
 		return false, nil
 	}
 	return true, nil

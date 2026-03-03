@@ -17,4 +17,6 @@ WORKDIR /app
 COPY --from=builder ./user/.env ./.env
 COPY --from=builder ./user/user-service .
 
+EXPOSE 8082
+
 ENTRYPOINT ["./user-service","http"]

@@ -16,3 +16,6 @@
 
 .env
 
+# SSL certificates (generated)
+nginx/certs/*.crt
+nginx/certs/*.key

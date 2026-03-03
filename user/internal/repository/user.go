@@ -3,11 +3,11 @@ package repository
 import (
 	"context"
 
-	"singkatin-api/shortener/pkg/logger"
 	"singkatin-api/user/internal/config"
 	"singkatin-api/user/internal/model"
 	shortenerpb "singkatin-api/user/pkg/api/v1/proto/shortener"
 	uploadpb "singkatin-api/user/pkg/api/v1/proto/upload"
+	"singkatin-api/user/pkg/logger"
 
 	"github.com/streadway/amqp"
 	"go.mongodb.org/mongo-driver/bson"
@@ -61,7 +61,7 @@ func (r *userRepositoryImpl) FindByEmail(ctx context.Context, email string) (*mo
 			return nil, model.NewError(model.NotFound, "users not found")
 		}
 
-		logger.Error("UserRepositoryImpl.FindByEmail FindOne ERROR, ", err)
+		logger.Errorf("UserRepositoryImpl.FindByEmail FindOne ERROR, %v", err)
 		return nil, err
 	}
 
@@ -80,7 +80,7 @@ func (r *userRepositoryImpl) PublishCreateUserShortener(ctx context.Context, req
 
 	b, err := proto.Marshal(msg)
 	if err != nil {
-		logger.Error("UserRepositoryImpl.PublishCreateUserShortener Marshal proto CreateShortenerMessage ERROR, ", err)
+		logger.Errorf("UserRepositoryImpl.PublishCreateUserShortener Marshal proto CreateShortenerMessage ERROR, %v", err)
 		return err
 	}
 
@@ -97,11 +97,11 @@ func (r *userRepositoryImpl) PublishCreateUserShortener(ctx context.Context, req
 		false,                                  // immediate
 		message,                                // message to publish
 	); err != nil {
-		logger.Error("UserRepositoryImpl.PublishCreateUserShortener RabbitMQ.Publish ERROR, ", err)
+		logger.Errorf("UserRepositoryImpl.PublishCreateUserShortener RabbitMQ.Publish ERROR, %v", err)
 		return err
 	}
 
-	logger.Info("Success Publish User Shortener to Queue: ", r.Config.RabbitMQ.QueueCreateShortener)
+	logger.Infof("Success Publish User Shortener to Queue: %s", r.Config.RabbitMQ.QueueCreateShortener)
 
 	return nil
 }
@@ -113,7 +113,7 @@ func (r *userRepositoryImpl) UpdateProfileByID(ctx context.Context, userID strin
 
 	objUserID, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
-		logger.Error("UserRepositoryImpl.UpdateProfileByID primitive.ObjectIDFromHex ERROR, ", err)
+		logger.Errorf("UserRepositoryImpl.UpdateProfileByID primitive.ObjectIDFromHex ERROR, %v", err)
 		return err
 	}
 
@@ -122,7 +122,7 @@ func (r *userRepositoryImpl) UpdateProfileByID(ctx context.Context, userID strin
 			"$set": bson.D{{Key: "fullname", Value: req.FullName}},
 		})
 	if err != nil {
-		logger.Error("UserRepositoryImpl.UpdateProfileByID UpdateOne ERROR, ", err)
+		logger.Errorf("UserRepositoryImpl.UpdateProfileByID UpdateOne ERROR, %v", err)
 		return err
 	}
 
@@ -141,7 +141,7 @@ func (r *userRepositoryImpl) PublishUploadAvatarUser(ctx context.Context, req *m
 
 	b, err := proto.Marshal(msg)
 	if err != nil {
-		logger.Error("UserRepositoryImpl.PublishUploadAvatarUser Marshal proto UploadAvatarMessage ERROR, ", err)
+		logger.Errorf("UserRepositoryImpl.PublishUploadAvatarUser Marshal proto UploadAvatarMessage ERROR, %v", err)
 		return err
 	}
 
@@ -158,11 +158,11 @@ func (r *userRepositoryImpl) PublishUploadAvatarUser(ctx context.Context, req *m
 		false,                               // immediate
 		message,                             // message to publish
 	); err != nil {
-		logger.Error("UserRepositoryImpl.PublishUploadAvatarUser RabbitMQ.Publish ERROR, ", err)
+		logger.Errorf("UserRepositoryImpl.PublishUploadAvatarUser RabbitMQ.Publish ERROR, %v", err)
 		return err
 	}
 
-	logger.Info("Success Publish Upload Avatar Users to Queue: ", r.Config.RabbitMQ.QueueUploadAvatar)
+	logger.Infof("Success Publish Upload Avatar Users to Queue: %s", r.Config.RabbitMQ.QueueUploadAvatar)
 
 	return nil
 }
@@ -174,7 +174,7 @@ func (r *userRepositoryImpl) UpdateAvatarUserByID(ctx context.Context, fileURL s
 
 	objUserID, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
-		logger.Error("UserRepositoryImpl.UpdateAvatarUserByID primitive.ObjectIDFromHex ERROR, ", err)
+		logger.Errorf("UserRepositoryImpl.UpdateAvatarUserByID primitive.ObjectIDFromHex ERROR, %v", err)
 		return err
 	}
 
@@ -183,7 +183,7 @@ func (r *userRepositoryImpl) UpdateAvatarUserByID(ctx context.Context, fileURL s
 			"$set": bson.D{{Key: "avatar_url", Value: fileURL}},
 		})
 	if err != nil {
-		logger.Error("UserRepositoryImpl.UpdateAvatarUserByID UpdateOne ERROR, ", err)
+		logger.Errorf("UserRepositoryImpl.UpdateAvatarUserByID UpdateOne ERROR, %v", err)
 		return err
 	}
 
@@ -202,7 +202,7 @@ func (r *userRepositoryImpl) PublishUpdateUserShortener(ctx context.Context, sho
 
 	b, err := proto.Marshal(msg)
 	if err != nil {
-		logger.Error("UserRepositoryImpl.PublishUpdateUserShortener Marshal proto UpdateShortenerMessage ERROR, ", err)
+		logger.Errorf("UserRepositoryImpl.PublishUpdateUserShortener Marshal proto UpdateShortenerMessage ERROR, %v", err)
 		return err
 	}
 
@@ -219,11 +219,11 @@ func (r *userRepositoryImpl) PublishUpdateUserShortener(ctx context.Context, sho
 		false,                                  // immediate
 		message,                                // message to publish
 	); err != nil {
-		logger.Error("UserRepositoryImpl.PublishUpdateUserShortener RabbitMQ.Publish ERROR, ", err)
+		logger.Errorf("UserRepositoryImpl.PublishUpdateUserShortener RabbitMQ.Publish ERROR, %v", err)
 		return err
 	}
 
-	logger.Info("Success Publish User Shortener to Queue: ", r.Config.RabbitMQ.QueueUpdateShortener)
+	logger.Infof("Success Publish User Shortener to Queue: %s", r.Config.RabbitMQ.QueueUpdateShortener)
 
 	return nil
 }
@@ -240,7 +240,7 @@ func (r *userRepositoryImpl) PublishDeleteUserShortener(ctx context.Context, sho
 
 	b, err := proto.Marshal(msg)
 	if err != nil {
-		logger.Error("UserRepositoryImpl.PublishDeleteUserShortener Marshal proto DeleteShortenerMessage ERROR, ", err)
+		logger.Errorf("UserRepositoryImpl.PublishDeleteUserShortener Marshal proto DeleteShortenerMessage ERROR, %v", err)
 		return err
 	}
 
@@ -257,11 +257,11 @@ func (r *userRepositoryImpl) PublishDeleteUserShortener(ctx context.Context, sho
 		false,                                  // immediate
 		message,                                // message to publish
 	); err != nil {
-		logger.Error("UserRepositoryImpl.PublishDeleteUserShortener RabbitMQ.Publish ERROR, ", err)
+		logger.Errorf("UserRepositoryImpl.PublishDeleteUserShortener RabbitMQ.Publish ERROR, %v", err)
 		return err
 	}
 
-	logger.Info("Success Publish User Shortener to Queue: ", r.Config.RabbitMQ.QueueDeleteShortener)
+	logger.Infof("Success Publish User Shortener to Queue: %s", r.Config.RabbitMQ.QueueDeleteShortener)
 
 	return nil
 }

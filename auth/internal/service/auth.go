@@ -80,7 +80,43 @@ func (s *authServiceImpl) RegisterUser(ctx context.Context, req *model.RegisterR
 		return nil, err
 	}
 
-	emailLink := fmt.Sprintf("<h1><a href='%s'>%s</a><h1>", s.Config.Server.BaseURL+"/v1/register/verify?code="+codeVerification, "Verification Link")
+	verifyURL := s.Config.Server.BaseURL + "/register/verify?code=" + codeVerification
+
+	emailLink := fmt.Sprintf(`
+	<!DOCTYPE html>
+	<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	</head>
+	<body style="margin:0;padding:0;background-color:#f4f4f7;font-family:'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+		<table width="100%%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f7;padding:40px 0;">
+			<tr><td align="center">
+				<table width="480" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+					<!-- Header -->
+					<tr><td style="background:linear-gradient(135deg,#6366f1,#8b5cf6);padding:32px 40px;text-align:center;">
+						<h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:700;letter-spacing:-0.5px;">Singkatin</h1>
+						<p style="margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:14px;">URL Shortener</p>
+					</td></tr>
+					<!-- Body -->
+					<tr><td style="padding:40px;">
+						<h2 style="margin:0 0 12px;color:#1a1a2e;font-size:20px;font-weight:600;">Verify Your Email</h2>
+						<p style="margin:0 0 24px;color:#555770;font-size:15px;line-height:1.6;">Thanks for signing up! Please click the button below to verify your email address and activate your account.</p>
+						<table width="100%%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:8px 0 24px;">
+							<a href="%s" style="display:inline-block;padding:14px 36px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#ffffff;text-decoration:none;border-radius:8px;font-size:15px;font-weight:600;letter-spacing:0.3px;">Verify Email Address</a>
+						</td></tr></table>
+						<p style="margin:0 0 8px;color:#9ca3af;font-size:13px;">This link will expire in %d minutes.</p>
+						<p style="margin:0;color:#9ca3af;font-size:13px;">If you didn't create an account, you can safely ignore this email.</p>
+					</td></tr>
+					<!-- Footer -->
+					<tr><td style="padding:24px 40px;background-color:#f9fafb;border-top:1px solid #e5e7eb;text-align:center;">
+						<p style="margin:0;color:#9ca3af;font-size:12px;">&copy; 2026 Singkatin. All rights reserved.</p>
+					</td></tr>
+				</table>
+			</td></tr>
+		</table>
+	</body>
+	</html>`, verifyURL, s.Config.Redis.TTL)
 
 	err = s.Mailer.SendEmail(ctx, req.Email, "Registration Confirmations", emailLink)
 	if err != nil {
@@ -177,7 +213,43 @@ func (s *authServiceImpl) ForgotPasswordUser(ctx context.Context, req *model.For
 		return err
 	}
 
-	emailLink := fmt.Sprintf("<h1><a href='%s'>%s</a><h1>", s.Config.Server.BaseURL+"/v1/forgot-password/verify?code="+codeVerification, "Verification Link")
+	verifyURL := s.Config.Server.BaseURL + "/forgot-password/verify?code=" + codeVerification
+
+	emailLink := fmt.Sprintf(`
+	<!DOCTYPE html>
+	<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	</head>
+	<body style="margin:0;padding:0;background-color:#f4f4f7;font-family:'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+		<table width="100%%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f7;padding:40px 0;">
+			<tr><td align="center">
+				<table width="480" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+					<!-- Header -->
+					<tr><td style="background:linear-gradient(135deg,#ef4444,#f97316);padding:32px 40px;text-align:center;">
+						<h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:700;letter-spacing:-0.5px;">Singkatin</h1>
+						<p style="margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:14px;">URL Shortener</p>
+					</td></tr>
+					<!-- Body -->
+					<tr><td style="padding:40px;">
+						<h2 style="margin:0 0 12px;color:#1a1a2e;font-size:20px;font-weight:600;">Reset Your Password</h2>
+						<p style="margin:0 0 24px;color:#555770;font-size:15px;line-height:1.6;">We received a request to reset your password. Click the button below to choose a new password.</p>
+						<table width="100%%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:8px 0 24px;">
+							<a href="%s" style="display:inline-block;padding:14px 36px;background:linear-gradient(135deg,#ef4444,#f97316);color:#ffffff;text-decoration:none;border-radius:8px;font-size:15px;font-weight:600;letter-spacing:0.3px;">Reset Password</a>
+						</td></tr></table>
+						<p style="margin:0 0 8px;color:#9ca3af;font-size:13px;">This link will expire in %d minutes.</p>
+						<p style="margin:0;color:#9ca3af;font-size:13px;">If you didn't request a password reset, you can safely ignore this email.</p>
+					</td></tr>
+					<!-- Footer -->
+					<tr><td style="padding:24px 40px;background-color:#f9fafb;border-top:1px solid #e5e7eb;text-align:center;">
+						<p style="margin:0;color:#9ca3af;font-size:12px;">&copy; 2026 Singkatin. All rights reserved.</p>
+					</td></tr>
+				</table>
+			</td></tr>
+		</table>
+	</body>
+	</html>`, verifyURL, s.Config.Redis.TTL)
 
 	err = s.Mailer.SendEmail(ctx, req.Email, "Forgot Password Confirmations", emailLink)
 	if err != nil {

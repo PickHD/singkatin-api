@@ -1,9 +1,26 @@
 services:
+  nginx-gateway:
+    container_name: nginx-gateway
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./nginx/certs:/etc/nginx/certs:ro
+    networks:
+      - singkatin-dev
+    restart: unless-stopped
+    depends_on:
+      - auth-service-http
+      - shortener-service-http
+      - user-service-http
   mongo:
     image: mongo
     container_name: mongo
-    ports:
-      - '27017:27017'
+    expose:
+      - '27017'
     networks:
       - singkatin-dev
     volumes:
@@ -11,8 +28,8 @@ services:
   redis:
     image: redis
     container_name: redis
-    ports:
-      - '6379:6379'
+    expose:
+      - '6379'
     networks:
       - singkatin-dev
     volumes:
@@ -27,6 +44,11 @@ services:
       - singkatin-dev
     volumes:
         - ~/.docker-conf/rabbitmq/data/:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 10s
+      retries: 5
   jaeger:
     image: jaegertracing/all-in-one:latest
     container_name: jaeger
@@ -82,41 +104,37 @@ services:
     build:
       context: .
       dockerfile: ./auth/build/http/Dockerfile
-    ports:
-      - '8080:8080'
-    command: auth-service http
+    expose:
+      - '8080'
     networks:
       - singkatin-dev
     restart: unless-stopped
     depends_on:
-      - mongo
-      - jaeger
-      - redis
-    links:
-      - mongo
-      - jaeger
-      - redis
+      mongo:
+        condition: service_started
+      jaeger:
+        condition: service_started
+      redis:
+        condition: service_started
   shortener-service-http:
     container_name: shortener-service-http
     build:
       context: .
       dockerfile: ./shortener/build/http/Dockerfile
-    ports:
-      - '8081:8081'
-    command: shortener-service http
+    expose:
+      - '8081'
     networks:
       - singkatin-dev
     restart: unless-stopped
     depends_on:
-      - mongo
-      - redis
-      - amqp
-      - jaeger
-    links:
-      - mongo
-      - redis
-      - amqp
-      - jaeger
+      mongo:
+        condition: service_started
+      redis:
+        condition: service_started
+      amqp:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
   shortener-service-grpc:
     container_name: shortener-service-grpc
     build:
@@ -124,77 +142,69 @@ services:
       dockerfile: ./shortener/build/grpc/Dockerfile
     ports:
       - '9091:9091'
-    command: shortener-service grpc
     networks:
       - singkatin-dev
     restart: unless-stopped
     depends_on:
-      - mongo
-      - redis
-      - amqp
-      - jaeger
-    links:
-      - mongo
-      - redis
-      - amqp
-      - jaeger
+      mongo:
+        condition: service_started
+      redis:
+        condition: service_started
+      amqp:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
   shortener-service-consumer:
     container_name: shortener-service-consumer
     build:
       context: .
       dockerfile: ./shortener/build/consumer/Dockerfile
-    command: shortener-service consumer
     networks:
       - singkatin-dev
     restart: unless-stopped
     depends_on:
-      - mongo
-      - redis
-      - amqp
-      - jaeger
-    links:
-      - mongo
-      - redis
-      - amqp
-      - jaeger
+      mongo:
+        condition: service_started
+      redis:
+        condition: service_started
+      amqp:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
   user-service-http:
     container_name: user-service-http
     build:
       context: .
       dockerfile: ./user/build/http/Dockerfile
-    ports:
-      - '8082:8082'
-    command: user-service http
+    expose:
+      - '8082'
     networks:
       - singkatin-dev
     restart: unless-stopped
     depends_on:
-      - mongo
-      - redis
-      - amqp
-      - jaeger
-    links:
-      - mongo
-      - redis
-      - amqp
-      - jaeger
+      mongo:
+        condition: service_started
+      redis:
+        condition: service_started
+      amqp:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
   upload-service-consumer:
     container_name: upload-service-consumer
     build:
       context: .
       dockerfile: ./upload/build/consumer/Dockerfile
-    command: upload-service consumer
     networks:
       - singkatin-dev
     restart: unless-stopped
     depends_on:
-      - minio
-      - amqp
-      - jaeger
-    links:
-      - minio
-      - amqp
-      - jaeger
+      minio:
+        condition: service_started
+      amqp:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
 networks:
   singkatin-dev:
     driver: bridge

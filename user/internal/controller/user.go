@@ -5,9 +5,9 @@ import (
 	"strings"
 
 	"singkatin-api/user/pkg/response"
+	"singkatin-api/user/pkg/utils"
 
 	"singkatin-api/user/internal/config"
-	"singkatin-api/user/internal/middleware"
 	"singkatin-api/user/internal/model"
 	"singkatin-api/user/internal/service"
 
@@ -51,13 +51,12 @@ func (c *userControllerImpl) Profile(ctx *fiber.Ctx) error {
 	_, span := tr.Start(c.Context, "Start Profile")
 	defer span.End()
 
-	data := ctx.Locals(model.KeyJWTValidAccess)
-	extData, err := middleware.Extract(data)
+	userCtx, err := utils.GetUserContext(ctx)
 	if err != nil {
 		return response.NewResponses[any](ctx, fiber.StatusInternalServerError, err.Error(), nil, err, nil)
 	}
 
-	detail, err := c.UserSvc.GetUserDetail(extData.Email)
+	detail, err := c.UserSvc.GetUserDetail(userCtx.Email)
 	if err != nil {
 		if strings.Contains(err.Error(), string(model.NotFound)) {
 			return response.NewResponses[any](ctx, fiber.StatusNotFound, err.Error(), nil, err, nil)
@@ -74,13 +73,12 @@ func (c *userControllerImpl) Dashboard(ctx *fiber.Ctx) error {
 	_, span := tr.Start(c.Context, "Start Dashboard")
 	defer span.End()
 
-	data := ctx.Locals(model.KeyJWTValidAccess)
-	extData, err := middleware.Extract(data)
+	userCtx, err := utils.GetUserContext(ctx)
 	if err != nil {
 		return response.NewResponses[any](ctx, fiber.StatusInternalServerError, err.Error(), nil, err, nil)
 	}
 
-	detail, err := c.UserSvc.GetUserShorts(extData.UserID)
+	detail, err := c.UserSvc.GetUserShorts(userCtx.UserID)
 	if err != nil {
 		return response.NewResponses[any](ctx, fiber.StatusInternalServerError, err.Error(), nil, err, nil)
 	}
@@ -95,8 +93,7 @@ func (c *userControllerImpl) GenerateShort(ctx *fiber.Ctx) error {
 
 	var req model.ShortUserRequest
 
-	data := ctx.Locals(model.KeyJWTValidAccess)
-	extData, err := middleware.Extract(data)
+	userCtx, err := utils.GetUserContext(ctx)
 	if err != nil {
 		return response.NewResponses[any](ctx, fiber.StatusInternalServerError, err.Error(), nil, err, nil)
 	}
@@ -105,7 +102,7 @@ func (c *userControllerImpl) GenerateShort(ctx *fiber.Ctx) error {
 		return response.NewResponses[any](ctx, fiber.StatusBadRequest, err.Error(), nil, err, nil)
 	}
 
-	newShort, err := c.UserSvc.GenerateUserShorts(extData.UserID, &req)
+	newShort, err := c.UserSvc.GenerateUserShorts(userCtx.UserID, &req)
 	if err != nil {
 		return response.NewResponses[any](ctx, fiber.StatusInternalServerError, err.Error(), nil, err, nil)
 	}
@@ -120,8 +117,7 @@ func (c *userControllerImpl) EditProfile(ctx *fiber.Ctx) error {
 
 	var req model.EditProfileRequest
 
-	data := ctx.Locals(model.KeyJWTValidAccess)
-	extData, err := middleware.Extract(data)
+	userCtx, err := utils.GetUserContext(ctx)
 	if err != nil {
 		return response.NewResponses[any](ctx, fiber.StatusInternalServerError, err.Error(), nil, err, nil)
 	}
@@ -130,7 +126,7 @@ func (c *userControllerImpl) EditProfile(ctx *fiber.Ctx) error {
 		return response.NewResponses[any](ctx, fiber.StatusBadRequest, err.Error(), nil, err, nil)
 	}
 
-	err = c.UserSvc.UpdateUserProfile(extData.UserID, &req)
+	err = c.UserSvc.UpdateUserProfile(userCtx.UserID, &req)
 	if err != nil {
 		if strings.Contains(err.Error(), string(model.Validation)) {
 			return response.NewResponses[any](ctx, fiber.StatusBadRequest, err.Error(), nil, err, nil)
@@ -147,13 +143,12 @@ func (c *userControllerImpl) UploadAvatar(ctx *fiber.Ctx) error {
 	_, span := tr.Start(c.Context, "Start UploadAvatar")
 	defer span.End()
 
-	data := ctx.Locals(model.KeyJWTValidAccess)
-	extData, err := middleware.Extract(data)
+	userCtx, err := utils.GetUserContext(ctx)
 	if err != nil {
 		return response.NewResponses[any](ctx, fiber.StatusInternalServerError, err.Error(), nil, err, nil)
 	}
 
-	resp, err := c.UserSvc.UploadUserAvatar(ctx, extData.UserID)
+	resp, err := c.UserSvc.UploadUserAvatar(ctx, userCtx.UserID)
 	if err != nil {
 		return response.NewResponses[any](ctx, fiber.StatusInternalServerError, err.Error(), nil, err, nil)
 	}

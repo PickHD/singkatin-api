@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
+	"syscall"
 	"time"
 
 	"singkatin-api/upload/internal/bootstrap"
@@ -51,31 +52,30 @@ func main() {
 
 	appContainer.Tracer.SetTracerProvider()
 
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, os.Interrupt)
-
 	switch mode {
 	case consumerMode:
-		forever := make(chan bool)
+		ctx, stop := signal.NotifyContext(context.Background(),
+			os.Interrupt,
+			syscall.SIGTERM,
+			syscall.SIGQUIT)
+		defer stop()
 
 		queues := []string{appContainer.Config.RabbitMQ.QueueUploadAvatar}
 
 		for _, q := range queues {
-			go appContainer.RabbitMQ.ConsumeMessages(appContainer.Context, appContainer.Config, appContainer.UploadController, q)
+			appContainer.RabbitMQ.ConsumeMessages(ctx, appContainer.Config, appContainer.UploadController, q)
 		}
 
-		go func() {
-			<-sigCh
-			logger.Info("Shutdown signal received")
-			forever <- true
-		}()
+		logger.Info("RabbitMQ Consumers started")
 
-		<-forever
+		<-ctx.Done()
 
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		logger.Info("Shutdown signal received")
+
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
-		appContainer.Close(ctx)
+		appContainer.Close(shutdownCtx)
 
 		logger.Info("UPLOAD SERVICE CLOSED GRACEFULLY")
 	}

@@ -147,14 +147,29 @@ func main() {
 			logger.Errorf("Error received by channel %v", err)
 		}
 	case consumerMode:
-		forever := make(chan bool)
+		ctx, stop := signal.NotifyContext(context.Background(),
+			os.Interrupt,
+			syscall.SIGTERM,
+			syscall.SIGQUIT)
+		defer stop()
 
 		queues := []string{appContainer.Config.RabbitMQ.QueueCreateShortener, appContainer.Config.RabbitMQ.QueueUpdateVisitor, appContainer.Config.RabbitMQ.QueueUpdateShortener, appContainer.Config.RabbitMQ.QueueDeleteShortener}
 
 		for _, q := range queues {
-			go appContainer.RabbitMQ.ConsumeMessages(appContainer.Context, appContainer.Config, appContainer.ShortController, q)
+			appContainer.RabbitMQ.ConsumeMessages(ctx, appContainer.Config, appContainer.ShortController, q)
 		}
 
-		<-forever
+		logger.Info("RabbitMQ Consumers started")
+
+		<-ctx.Done()
+
+		logger.Info("Shutdown signal received")
+
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		appContainer.Close(shutdownCtx)
+
+		logger.Info("SHORTENER CONSUMER SERVICE CLOSED GRACEFULLY")
 	}
 }

@@ -2,7 +2,6 @@ package model
 
 import (
 	"regexp"
-	"time"
 )
 
 type (
@@ -28,9 +27,8 @@ type (
 
 	// LoginResponse consist response of success login as users
 	LoginResponse struct {
-		AccessToken string    `json:"access_token"`
-		Type        string    `json:"type"`
-		ExpireAt    time.Time `json:"expired_at"`
+		AccessToken string `json:"access_token"`
+		Type        string `json:"type"`
 	}
 
 	VerifyCodeResponse struct {

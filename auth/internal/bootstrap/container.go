@@ -19,6 +19,7 @@ type Container struct {
 	Redis   *infrastructure.RedisConnectionProvider
 	Tracer  *infrastructure.TracerProvider
 	Mailer  *infrastructure.EmailProvider
+	JWT     *infrastructure.JwtProvider
 
 	HealthCheckController controller.HealthCheckController
 	AuthController        controller.AuthController
@@ -32,6 +33,7 @@ func NewContainer(ctx context.Context) (*Container, error) {
 	redis := infrastructure.NewRedisConnection(ctx, cfg)
 	tracer := infrastructure.NewTracerProvider(ctx, cfg)
 	mailer := infrastructure.NewEmailProvider(cfg)
+	jwt := infrastructure.NewJWTProvider(cfg)
 
 	// repository
 	healthCheckRepo := repository.NewHealthCheckRepository(ctx, cfg, tracer.Tracer("Auth Repository"), db.GetDatabase(), redis.GetClient())
@@ -39,7 +41,7 @@ func NewContainer(ctx context.Context) (*Container, error) {
 
 	// service
 	healthCheckSvc := service.NewHealthCheckService(ctx, cfg, tracer.Tracer("Auth Service"), healthCheckRepo)
-	authSvc := service.NewAuthService(ctx, cfg, tracer.Tracer("Auth Service"), mailer.GetDialer(), authRepo)
+	authSvc := service.NewAuthService(ctx, cfg, tracer.Tracer("Auth Service"), mailer, authRepo, jwt)
 
 	// controller
 	healthCheckController := controller.NewHealthCheckController(ctx, cfg, tracer.Tracer("Auth Controller"), healthCheckSvc)
@@ -54,6 +56,7 @@ func NewContainer(ctx context.Context) (*Container, error) {
 		Redis:   redis,
 		Tracer:  tracer,
 		Mailer:  mailer,
+		JWT:     jwt,
 
 		HealthCheckController: healthCheckController,
 		AuthController:        authController,

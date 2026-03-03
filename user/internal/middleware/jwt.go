@@ -1,122 +1,51 @@
 package middleware
 
 import (
-	"fmt"
+	"net/http"
 	"strings"
-	"time"
 
-	"singkatin-api/user/internal/config"
+	"singkatin-api/user/internal/infrastructure"
 	"singkatin-api/user/internal/model"
 	"singkatin-api/user/pkg/response"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/golang-jwt/jwt"
 )
 
-type (
-	// DecodePayloadData consists decoded payload data
-	DecodePayloadData struct {
-		UserID   string `json:"user_id"`
-		FullName string `json:"full_name"`
-		Email    string `json:"email"`
+type AuthMiddleware struct {
+	jwtProvider *infrastructure.JwtProvider
+}
+
+func NewAuthMiddleware(jwtProvider *infrastructure.JwtProvider) *AuthMiddleware {
+	return &AuthMiddleware{
+		jwtProvider: jwtProvider,
 	}
-)
+}
 
-const (
-	payloadUserID   string = "user_id"
-	payloadFullName string = "full_name"
-	payloadEmail    string = "email"
-	payloadExpires  string = "exp"
+func (m *AuthMiddleware) VerifyToken(ctx *fiber.Ctx) error {
+	var tokenString string
 
-	JWTExpire time.Duration = time.Duration(7) * time.Hour
-)
+	authHeader := ctx.Get("Authorization")
+	if authHeader != "" {
+		parts := strings.Split(authHeader, " ")
+		if len(parts) == 2 && parts[0] == "Bearer" {
+			tokenString = parts[1]
+		}
+	}
 
-// ValidateJWTMiddleware responsible to validating jwt in header each request
-func ValidateJWTMiddleware(ctx *fiber.Ctx) error {
-	// validate JWT coming from request, if valid decode into a struct
-	decodedPayload, err := validate(ctx)
+	if tokenString == "" {
+		tokenString = ctx.Query("token")
+	}
+
+	if tokenString == "" {
+		return response.NewResponses[any](ctx, http.StatusUnauthorized, "missing or invalid authentication token", nil, nil, nil)
+	}
+
+	claims, err := m.jwtProvider.ValidateToken(tokenString)
 	if err != nil {
-		return response.NewResponses[any](ctx, fiber.StatusUnauthorized, fmt.Sprintf("Unauthorized access, reason : %s", err.Error()), err, nil, nil)
+		return response.NewResponses[any](ctx, http.StatusUnauthorized, "invalid or expired token", nil, err, nil)
 	}
 
-	// pass decoded payload into ctx.Locals()
-	ctx.Locals(model.KeyJWTValidAccess, decodedPayload)
+	ctx.Locals(model.KeyJWTValidAccess, claims)
 
-	// going to next handler..
 	return ctx.Next()
-}
-
-// validate will checking validity of signed JWT token from request in
-func validate(ctx *fiber.Ctx) (DecodePayloadData, error) {
-	cfg := config.Load()
-
-	header := ctx.Get("Authorization", "")
-	if !strings.Contains(header, "Bearer") {
-		return DecodePayloadData{}, model.NewError(model.NotFound, "Token not found")
-	}
-
-	getToken := strings.Replace(header, "Bearer ", "", -1)
-	validToken, err := jwt.Parse(getToken, func(token *jwt.Token) (interface{}, error) {
-		if _, isValid := token.Method.(*jwt.SigningMethodHMAC); !isValid {
-			return nil, model.NewError(model.Validation, "Invalid token")
-		}
-		return []byte(cfg.Secret.JWTSecret), nil
-	})
-	if err != nil {
-		return DecodePayloadData{}, err
-	}
-
-	claims := validToken.Claims.(jwt.MapClaims)
-
-	// Check is token expired or not
-	if expInt, ok := claims[payloadExpires].(float64); ok {
-		now := time.Now().Unix()
-		if now > int64(expInt) {
-			return DecodePayloadData{}, model.NewError(model.Validation, "Token expired")
-		}
-	} else {
-		return DecodePayloadData{}, model.NewError(model.Type, "type assertion payload exp error")
-	}
-
-	decodePayload, err := insertPayload(claims)
-	if err != nil {
-		return DecodePayloadData{}, err
-	}
-
-	return decodePayload, nil
-}
-
-// Extract will extracting payload data from ctx.Locals
-func Extract(data interface{}) (DecodePayloadData, error) {
-	extractData, ok := data.(DecodePayloadData)
-	if !ok {
-		return DecodePayloadData{}, model.NewError(model.Type, "type assertion extract data error")
-	}
-
-	return extractData, nil
-}
-
-// insertPayload will inserting data from decoded payload into defined struct
-func insertPayload(claims jwt.MapClaims) (DecodePayloadData, error) {
-	decodePayloadData := DecodePayloadData{}
-
-	if userID, ok := claims[payloadUserID].(string); ok {
-		decodePayloadData.UserID = userID
-	} else {
-		return DecodePayloadData{}, model.NewError(model.Type, "type assertion user_id error")
-	}
-
-	if userEmail, ok := claims[payloadEmail].(string); ok {
-		decodePayloadData.Email = userEmail
-	} else {
-		return DecodePayloadData{}, model.NewError(model.Type, "type assertion email error")
-	}
-
-	if userFullName, ok := claims[payloadFullName].(string); ok {
-		decodePayloadData.FullName = userFullName
-	} else {
-		return DecodePayloadData{}, model.NewError(model.Type, "type assertion full_name error")
-	}
-
-	return decodePayloadData, nil
 }

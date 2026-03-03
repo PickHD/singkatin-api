@@ -6,15 +6,14 @@ import (
 	"time"
 
 	"singkatin-api/auth/internal/config"
+	"singkatin-api/auth/internal/infrastructure"
 	"singkatin-api/auth/internal/model"
 	"singkatin-api/auth/internal/repository"
 	"singkatin-api/auth/pkg/logger"
 	"singkatin-api/auth/pkg/utils"
 
-	"github.com/golang-jwt/jwt"
 	"github.com/redis/go-redis/v9"
 	"go.opentelemetry.io/otel/sdk/trace"
-	"gopkg.in/gomail.v2"
 )
 
 type (
@@ -32,19 +31,21 @@ type (
 		Context  context.Context
 		Config   *config.Config
 		Tracer   *trace.TracerProvider
-		Mailer   *gomail.Dialer
+		Mailer   *infrastructure.EmailProvider
 		AuthRepo repository.AuthRepository
+		JWT      *infrastructure.JwtProvider
 	}
 )
 
 // NewAuthService return new instances auth service
-func NewAuthService(ctx context.Context, config *config.Config, tracer *trace.TracerProvider, mailer *gomail.Dialer, authRepo repository.AuthRepository) AuthService {
+func NewAuthService(ctx context.Context, config *config.Config, tracer *trace.TracerProvider, mailer *infrastructure.EmailProvider, authRepo repository.AuthRepository, jwt *infrastructure.JwtProvider) AuthService {
 	return &authServiceImpl{
 		Context:  ctx,
 		Config:   config,
 		Tracer:   tracer,
 		Mailer:   mailer,
 		AuthRepo: authRepo,
+		JWT:      jwt,
 	}
 }
 
@@ -83,7 +84,7 @@ func (s *authServiceImpl) RegisterUser(ctx context.Context, req *model.RegisterR
 
 	emailLink := fmt.Sprintf("<h1><a href='%s'>%s</a><h1>", "http://localhost:8080/v1/register/verify?code="+codeVerification, "Verification Link")
 
-	err = s.sendMail(s.Config.Mailer.Sender, []string{req.Email}, req.Email, "Registration Confirmations", "Please Complete the Verification of your Request Registration", emailLink)
+	err = s.Mailer.SendEmail(ctx, req.Email, "Registration Confirmations", emailLink)
 	if err != nil {
 		logger.Errorf("AuthServiceImpl.RegisterUser() sendMail ERROR, %v", err)
 		return nil, err
@@ -117,7 +118,7 @@ func (s *authServiceImpl) LoginUser(ctx context.Context, req *model.LoginRequest
 	}
 
 	// generate access token jwt
-	token, expiredAt, err := s.generateJWT(user)
+	token, err := s.JWT.GenerateToken(user.ID.Hex(), user.FullName, user.Email)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +126,6 @@ func (s *authServiceImpl) LoginUser(ctx context.Context, req *model.LoginRequest
 	return &model.LoginResponse{
 		AccessToken: token,
 		Type:        "Bearer",
-		ExpireAt:    time.Now().Add(expiredAt),
 	}, nil
 }
 
@@ -181,7 +181,7 @@ func (s *authServiceImpl) ForgotPasswordUser(ctx context.Context, req *model.For
 
 	emailLink := fmt.Sprintf("<h1><a href='%s'>%s</a><h1>", "http://localhost:8080/v1/forgot-password/verify?code="+codeVerification, "Verification Link")
 
-	err = s.sendMail(s.Config.Mailer.Sender, []string{req.Email}, req.Email, "Forgot Password Confirmations", "Please Complete the Verification of your Request Forgot Password", emailLink)
+	err = s.Mailer.SendEmail(ctx, req.Email, "Forgot Password Confirmations", emailLink)
 	if err != nil {
 		logger.Errorf("AuthServiceImpl.ForgotPasswordUser() sendMail ERROR, %v", err)
 		return err
@@ -254,47 +254,6 @@ func validateRegisterUser(req *model.RegisterRequest) error {
 func validateLoginUser(req *model.LoginRequest) error {
 	if !model.IsValidEmail.MatchString(req.Email) {
 		return model.NewError(model.Validation, "invalid email")
-	}
-
-	return nil
-}
-
-func (s *authServiceImpl) generateJWT(user *model.User) (string, time.Duration, error) {
-	var (
-		payloadUserID   = "user_id"
-		payloadFullName = "full_name"
-		payloadEmail    = "email"
-		payloadExpires  = "exp"
-		JWTExpire       = time.Duration(s.Config.Common.JWTExpire) * time.Hour
-	)
-
-	claims := jwt.MapClaims{}
-	claims[payloadUserID] = user.ID.Hex()
-	claims[payloadFullName] = user.FullName
-	claims[payloadEmail] = user.Email
-	claims[payloadExpires] = time.Now().Add(JWTExpire).Unix()
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
-	signedToken, err := token.SignedString([]byte(s.Config.Secret.JWTSecret))
-	if err != nil {
-		return "", 0, err
-	}
-
-	return signedToken, JWTExpire, nil
-}
-
-func (s *authServiceImpl) sendMail(from string, to []string, cc string, ccTitle string, subject string, body string) error {
-	mailer := gomail.NewMessage()
-	mailer.SetHeader("From", from)
-	mailer.SetHeader("To", to...)
-	mailer.SetAddressHeader("Cc", cc, ccTitle)
-	mailer.SetHeader("Subject", subject)
-	mailer.SetBody("text/html", body)
-
-	err := s.Mailer.DialAndSend(mailer)
-	if err != nil {
-		return err
 	}
 
 	return nil

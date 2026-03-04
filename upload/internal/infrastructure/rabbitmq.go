@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	uploadpb "singkatin-api/proto/api/v1/proto/upload"
 	"singkatin-api/upload/internal/config"
 	"singkatin-api/upload/internal/controller"
-	uploadpb "singkatin-api/upload/pkg/api/v1/proto/upload"
 	"singkatin-api/upload/pkg/logger"
 
 	"github.com/streadway/amqp"

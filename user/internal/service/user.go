@@ -6,14 +6,15 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"time"
 
 	"singkatin-api/user/pkg/logger"
 	"singkatin-api/user/pkg/utils"
 
+	shortenerpb "singkatin-api/proto/api/v1/proto/shortener"
 	"singkatin-api/user/internal/config"
 	"singkatin-api/user/internal/model"
 	"singkatin-api/user/internal/repository"
-	shortenerpb "singkatin-api/user/pkg/api/v1/proto/shortener"
 
 	"github.com/gofiber/fiber/v2"
 	"go.opentelemetry.io/otel/sdk/trace"
@@ -93,10 +94,38 @@ func (s *userServiceImpl) GenerateUserShorts(ctx context.Context, userID string,
 	ctx, span := tr.Start(ctx, "Start GenerateUserShorts")
 	defer span.End()
 
+	shortUrl := ""
+	if req.CustomURL != "" {
+		if len(req.CustomURL) < 3 {
+			return nil, model.NewError(model.Validation, "custom URL must be at least 3 characters")
+		}
+
+		exists, err := s.ShortClients.ExistsByShortURL(ctx, &shortenerpb.ExistsByShortURLRequest{
+			ShortUrl: req.CustomURL,
+			Id:       "",
+		})
+		if err != nil {
+			return nil, err
+		}
+		if exists.GetExists() {
+			return nil, model.NewError(model.Validation, "custom URL already exists")
+		}
+
+		shortUrl = req.CustomURL
+	} else {
+		shortUrl = utils.RandomStringBytesMaskImprSrcSB(8)
+	}
+
+	var expiresAt int64
+	if req.ExpiresInDays != nil {
+		expiresAt = time.Now().AddDate(0, 0, *req.ExpiresInDays).Unix()
+	}
+
 	msg := model.GenerateShortUserMessage{
-		FullURL:  req.FullURL,
-		UserID:   userID,
-		ShortURL: utils.RandomStringBytesMaskImprSrcSB(8),
+		FullURL:   req.FullURL,
+		UserID:    userID,
+		ShortURL:  shortUrl,
+		ExpiresAt: expiresAt,
 	}
 
 	err := s.UserRepo.PublishCreateUserShortener(ctx, &msg)
@@ -198,6 +227,24 @@ func (s *userServiceImpl) UpdateUserShorts(ctx context.Context, shortID string, 
 	tr := s.Tracer.Tracer("User-UpdateUserShorts Service")
 	ctx, span := tr.Start(ctx, "Start UpdateUserShorts")
 	defer span.End()
+
+	if req.CustomURL != "" {
+		if len(req.CustomURL) < 3 {
+			return nil, model.NewError(model.Validation, "custom URL must be at least 3 characters")
+		}
+
+		exists, err := s.ShortClients.ExistsByShortURL(ctx, &shortenerpb.ExistsByShortURLRequest{
+			ShortUrl: req.CustomURL,
+			Id:       shortID,
+		})
+
+		if err != nil {
+			return nil, err
+		}
+		if exists.GetExists() {
+			return nil, model.NewError(model.Validation, "custom URL already exists")
+		}
+	}
 
 	err := s.UserRepo.PublishUpdateUserShortener(ctx, shortID, req)
 	if err != nil {

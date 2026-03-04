@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package api.v1.proto.upload;
 
-option go_package = "github.com/PickHD/singkatin-revamp/upload/pkg/api/v1/proto/upload;uploadpb";
+option go_package = "singkatin-api/proto/api/v1/proto/upload;uploadpb";
 
 message UploadAvatarMessage {
     string file_name = 1;

@@ -2,17 +2,29 @@ syntax = "proto3";
 
 package api.v1.proto.shortener;
 
-option go_package = "github.com/PickHD/singkatin-revamp/user/pkg/api/v1/proto/shortener;shortenerpb";
+option go_package = "singkatin-api/proto/api/v1/proto/shortener;shortenerpb";
 
 message Shortener {
     string id = 1;
     string full_url = 2;
     string short_url = 3;
     int64 visited = 4;
+    int64 expires_at = 5;
 }
 
 service ShortenerService {
     rpc GetListShortenerByUserID(ListShortenerRequest) returns (ListShortenerResponse);
+    rpc ExistsByShortURL(ExistsByShortURLRequest) returns (ExistsByShortURLResponse);
+    rpc GetShortenerByID(GetShortenerByIDRequest) returns (GetShortenerByIDResponse);
+}
+
+message ExistsByShortURLRequest {
+    string short_url=1;
+    string id=2;
+}
+
+message ExistsByShortURLResponse {
+    bool exists=1;
 }
 
 message ListShortenerRequest {
@@ -23,10 +35,19 @@ message ListShortenerResponse {
     repeated Shortener shorteners=1;
 }
 
+message GetShortenerByIDRequest {
+    string id=1;
+}
+
+message GetShortenerByIDResponse {
+    Shortener shortener=1;
+}
+
 message CreateShortenerMessage {
     string user_id=1;
     string full_url=2;
     string short_url=3;
+    int64  expires_at=4;
 }
 
 message UpdateVisitorCountMessage {
@@ -36,8 +57,10 @@ message UpdateVisitorCountMessage {
 message UpdateShortenerMessage {
     string id =1;
     string full_url=2;
+    string short_url=3;
 }
 
 message DeleteShortenerMessage {
     string id = 1;
 }
+

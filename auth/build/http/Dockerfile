@@ -1,21 +1,30 @@
 FROM golang:1.25 AS builder
 
-WORKDIR /auth
-COPY ./auth/go.mod ./
-COPY ./auth/go.sum ./
+WORKDIR /app
 
-RUN go mod download
+COPY go.work go.work.sum* ./
+COPY auth/go.mod auth/go.sum* ./auth/
+COPY proto/go.mod proto/go.sum* ./proto/
+COPY shortener/go.mod shortener/go.sum* ./shortener/
+COPY upload/go.mod upload/go.sum* ./upload/
+COPY user/go.mod user/go.sum* ./user/
 
-COPY ./auth .
+RUN cd auth && go mod download || true
+RUN cd proto && go mod download || true
+RUN cd shortener && go mod download || true
+RUN cd upload && go mod download || true
+RUN cd user && go mod download || true
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o auth-service ./cmd
+COPY . .
+
+RUN cd auth && CGO_ENABLED=0 GOOS=linux go build -o /app/auth-service ./cmd
 
 FROM alpine:3.11.3
 
 WORKDIR /app
 
-COPY --from=builder ./auth/.env ./.env
-COPY --from=builder ./auth/auth-service .
+COPY --from=builder /app/auth/.env ./.env
+COPY --from=builder /app/auth-service .
 
 EXPOSE 8080
 

@@ -12,6 +12,7 @@ const (
 	Validation ErrorKind = "Validation Error"
 	Type       ErrorKind = "Type Error"
 	NotFound   ErrorKind = "Not Found"
+	Gone       ErrorKind = "Gone"
 	Unknown    ErrorKind = "Unknown Error"
 	Internal   ErrorKind = "Internal Server Error"
 )

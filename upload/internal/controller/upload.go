@@ -3,10 +3,10 @@ package controller
 import (
 	"context"
 
+	uploadpb "singkatin-api/proto/api/v1/proto/upload"
 	"singkatin-api/upload/internal/config"
 	"singkatin-api/upload/internal/model"
 	"singkatin-api/upload/internal/service"
-	uploadpb "singkatin-api/upload/pkg/api/v1/proto/upload"
 
 	"go.opentelemetry.io/otel/sdk/trace"
 )

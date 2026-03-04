@@ -3,9 +3,9 @@ package infrastructure
 import (
 	"context"
 	"fmt"
+	shortenerpb "singkatin-api/proto/api/v1/proto/shortener"
 	"singkatin-api/shortener/internal/config"
 	"singkatin-api/shortener/internal/controller"
-	shortenerpb "singkatin-api/shortener/pkg/api/v1/proto/shortener"
 	"singkatin-api/shortener/pkg/logger"
 
 	"github.com/streadway/amqp"

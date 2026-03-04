@@ -26,7 +26,9 @@ type (
 
 	// ShortUserRequest consist request data generate/update short users
 	ShortUserRequest struct {
-		FullURL string `json:"full_url"`
+		FullURL       string `json:"full_url"`
+		CustomURL     string `json:"custom_url"`
+		ExpiresInDays *int   `json:"expires_in_days"`
 	}
 
 	// ShortUserResponse consist response data when success generate/update short users
@@ -37,9 +39,10 @@ type (
 
 	// GenerateShortUserMessage consist message short users to publish
 	GenerateShortUserMessage struct {
-		FullURL  string `json:"full_url"`
-		ShortURL string `json:"short_url"`
-		UserID   string `json:"user_id"`
+		FullURL   string `json:"full_url"`
+		ShortURL  string `json:"short_url"`
+		UserID    string `json:"user_id"`
+		ExpiresAt int64  `json:"expires_at"`
 	}
 
 	// EditProfileRequest consist request data edit profile users

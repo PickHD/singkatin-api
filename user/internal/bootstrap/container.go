@@ -2,13 +2,13 @@ package bootstrap
 
 import (
 	"context"
+	shortenerpb "singkatin-api/proto/api/v1/proto/shortener"
 	"singkatin-api/user/internal/config"
 	"singkatin-api/user/internal/controller"
 	"singkatin-api/user/internal/infrastructure"
 	"singkatin-api/user/internal/middleware"
 	"singkatin-api/user/internal/repository"
 	"singkatin-api/user/internal/service"
-	shortenerpb "singkatin-api/user/pkg/api/v1/proto/shortener"
 	"singkatin-api/user/pkg/logger"
 	"time"
 
@@ -44,7 +44,7 @@ func NewContainer(ctx context.Context) (*Container, error) {
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	}
-	grpcConn, err := grpc.Dial(cfg.Common.GRPCPort, opts...)
+	grpcConn, err := grpc.NewClient(cfg.Common.GRPCPort, opts...)
 	if err != nil {
 		return nil, err
 	}

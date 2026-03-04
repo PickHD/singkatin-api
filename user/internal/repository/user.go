@@ -3,10 +3,10 @@ package repository
 import (
 	"context"
 
+	shortenerpb "singkatin-api/proto/api/v1/proto/shortener"
+	uploadpb "singkatin-api/proto/api/v1/proto/upload"
 	"singkatin-api/user/internal/config"
 	"singkatin-api/user/internal/model"
-	shortenerpb "singkatin-api/user/pkg/api/v1/proto/shortener"
-	uploadpb "singkatin-api/user/pkg/api/v1/proto/upload"
 	"singkatin-api/user/pkg/logger"
 
 	"github.com/streadway/amqp"
@@ -268,9 +268,10 @@ func (r *userRepositoryImpl) PublishDeleteUserShortener(ctx context.Context, sho
 
 func (r *userRepositoryImpl) prepareProtoPublishCreateUserShortenerMessage(req *model.GenerateShortUserMessage) *shortenerpb.CreateShortenerMessage {
 	return &shortenerpb.CreateShortenerMessage{
-		FullUrl:  req.FullURL,
-		UserId:   req.UserID,
-		ShortUrl: req.ShortURL,
+		FullUrl:   req.FullURL,
+		UserId:    req.UserID,
+		ShortUrl:  req.ShortURL,
+		ExpiresAt: req.ExpiresAt,
 	}
 }
 

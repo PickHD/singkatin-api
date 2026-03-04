@@ -4,11 +4,12 @@ import (
 	"context"
 	"net/http"
 	"strings"
+	"time"
 
+	shortenerpb "singkatin-api/proto/api/v1/proto/shortener"
 	"singkatin-api/shortener/internal/config"
 	"singkatin-api/shortener/internal/model"
 	"singkatin-api/shortener/internal/service"
-	shortenerpb "singkatin-api/shortener/pkg/api/v1/proto/shortener"
 	"singkatin-api/shortener/pkg/response"
 
 	"github.com/labstack/echo/v4"
@@ -22,6 +23,7 @@ type (
 	ShortController interface {
 		// grpc
 		GetListShortenerByUserID(ctx context.Context, req *shortenerpb.ListShortenerRequest) (*shortenerpb.ListShortenerResponse, error)
+		ExistsByShortURL(ctx context.Context, req *shortenerpb.ExistsByShortURLRequest) (*shortenerpb.ExistsByShortURLResponse, error)
 
 		// http
 		ClickShortener(ctx echo.Context) error
@@ -81,6 +83,21 @@ func (c *ShortControllerImpl) GetListShortenerByUserID(ctx context.Context, req 
 	}, nil
 }
 
+func (c *ShortControllerImpl) ExistsByShortURL(ctx context.Context, req *shortenerpb.ExistsByShortURLRequest) (*shortenerpb.ExistsByShortURLResponse, error) {
+	tr := c.Tracer.Tracer("Shortener-ExistsByShortURL Controller")
+	_, span := tr.Start(ctx, "Start ExistsByShortURL")
+	defer span.End()
+
+	exists, err := c.ShortSvc.ExistsByShortURL(ctx, req.GetShortUrl(), req.GetId())
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Failed Exists By ShortURL %s", err.Error())
+	}
+
+	return &shortenerpb.ExistsByShortURLResponse{
+		Exists: exists,
+	}, nil
+}
+
 func (c *ShortControllerImpl) ClickShortener(ctx echo.Context) error {
 	tr := c.Tracer.Tracer("Shortener-ClickShortener Controller")
 	userCtxValue := ctx.Request().Context()
@@ -97,10 +114,19 @@ func (c *ShortControllerImpl) ClickShortener(ctx echo.Context) error {
 			return response.NewResponses[any](ctx, http.StatusNotFound, err.Error(), ctx.Param("short_url"), err, nil)
 		}
 
+		if strings.Contains(err.Error(), string(model.Gone)) {
+			return response.NewResponses[any](ctx, http.StatusGone, err.Error(), ctx.Param("short_url"), err, nil)
+		}
+
 		return response.NewResponses[any](ctx, http.StatusInternalServerError, "failed click shortener", ctx.Param("short_url"), err, nil)
 	}
 
-	return ctx.Redirect(http.StatusTemporaryRedirect, data.FullURL)
+	statusCode := http.StatusMovedPermanently
+	if !data.Permanent {
+		statusCode = http.StatusFound
+	}
+
+	return ctx.Redirect(statusCode, data.FullURL)
 }
 
 func (c *ShortControllerImpl) ProcessCreateShortUser(ctx context.Context, msg *shortenerpb.CreateShortenerMessage) error {
@@ -108,10 +134,17 @@ func (c *ShortControllerImpl) ProcessCreateShortUser(ctx context.Context, msg *s
 	ctx, span := tr.Start(ctx, "Start ProcessCreateShortUser")
 	defer span.End()
 
+	var expiresAt *time.Time
+	if msg.GetExpiresAt() > 0 {
+		t := time.Unix(msg.GetExpiresAt(), 0)
+		expiresAt = &t
+	}
+
 	req := &model.CreateShortRequest{
-		UserID:   msg.GetUserId(),
-		FullURL:  msg.GetFullUrl(),
-		ShortURL: msg.GetShortUrl(),
+		UserID:    msg.GetUserId(),
+		FullURL:   msg.GetFullUrl(),
+		ShortURL:  msg.GetShortUrl(),
+		ExpiresAt: expiresAt,
 	}
 
 	err := c.ShortSvc.CreateShort(ctx, req)

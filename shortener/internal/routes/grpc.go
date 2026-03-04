@@ -1,8 +1,8 @@
 package routes
 
 import (
+	shortenerpb "singkatin-api/proto/api/v1/proto/shortener"
 	"singkatin-api/shortener/internal/bootstrap"
-	shortenerpb "singkatin-api/shortener/pkg/api/v1/proto/shortener"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"

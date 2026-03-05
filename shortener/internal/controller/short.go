@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -163,7 +164,8 @@ func (c *ShortControllerImpl) GenerateQRCode(ctx echo.Context) error {
 		return response.NewResponses[any](ctx, http.StatusNotFound, "short URL not found", ctx.Param("short_url"), nil, nil)
 	}
 
-	png, err := qrcode.Encode(data.FullURL, qrcode.Medium, 512)
+	shortLink := fmt.Sprintf("%s/%s", c.Config.Server.BaseURL, ctx.Param("short_url"))
+	png, err := qrcode.Encode(shortLink, qrcode.Medium, 512)
 	if err != nil {
 		return response.NewResponses[any](ctx, http.StatusInternalServerError, "failed generate QR code", ctx.Param("short_url"), err, nil)
 	}

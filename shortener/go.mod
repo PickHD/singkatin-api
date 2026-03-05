@@ -7,6 +7,7 @@ require (
 	github.com/labstack/echo/v4 v4.10.2
 	github.com/redis/go-redis/v9 v9.0.4
 	github.com/sirupsen/logrus v1.9.0
+	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 	github.com/streadway/amqp v1.0.0
 	go.mongodb.org/mongo-driver v1.11.6
 	go.opentelemetry.io/otel v1.39.0

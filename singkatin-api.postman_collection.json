@@ -1,61 +1,24 @@
 {
 	"info": {
+		"_postman_id": "f6d16678-56cd-4566-ac35-14db9dbc7b4f",
 		"name": "Singkatin API",
 		"description": "Postman collection for Singkatin URL Shortener Microservices.\n\nAll requests go through the NGINX API Gateway.\n\n**Base URL:** `https://{{base_url}}`\n\n**Services:**\n- Auth Service → `/api/v1/auth/*`\n- Shortener Service → `/api/v1/shortener/*`\n- User Service → `/api/v1/user/*`",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+		"_exporter_id": "30898547"
 	},
-	"variable": [
-		{
-			"key": "base_url",
-			"value": "localhost",
-			"type": "string"
-		},
-		{
-			"key": "access_token",
-			"value": "",
-			"type": "string"
-		},
-		{
-			"key": "verify_code",
-			"value": "",
-			"type": "string"
-		},
-		{
-			"key": "short_id",
-			"value": "",
-			"type": "string"
-		},
-		{
-			"key": "short_url",
-			"value": "",
-			"type": "string"
-		}
-	],
 	"item": [
 		{
 			"name": "Auth Service",
-			"description": "Authentication & authorization endpoints (register, login, password reset).",
 			"item": [
 				{
 					"name": "Health Check",
 					"request": {
 						"method": "GET",
 						"header": [],
-						"url": {
-							"raw": "https://{{base_url}}/api/v1/auth/health-check",
-							"protocol": "https",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"auth",
-								"health-check"
-							]
-						},
+						"url": "https://{{base_url}}/api/v1/auth/health-check",
 						"description": "Check if the Auth service is healthy."
-					}
+					},
+					"response": []
 				},
 				{
 					"name": "Register",
@@ -69,23 +32,12 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"fullname\": \"John Doe\",\n\t\"email\": \"johndoe@example.com\",\n\t\"password\": \"securepassword123\"\n}"
+							"raw": "{\n\t\"fullname\": \"Rachman\",\n\t\"email\": \"taufik.rachman@sqe.co.id\",\n\t\"password\": \"Kamenraida@123\"\n}"
 						},
-						"url": {
-							"raw": "https://{{base_url}}/api/v1/auth/register",
-							"protocol": "https",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"auth",
-								"register"
-							]
-						},
+						"url": "https://{{base_url}}/api/v1/auth/register",
 						"description": "Register a new user account. A verification email will be sent."
-					}
+					},
+					"response": []
 				},
 				{
 					"name": "Verify Registration",
@@ -114,7 +66,8 @@
 							]
 						},
 						"description": "Verify a user's registration using the code sent via email."
-					}
+					},
+					"response": []
 				},
 				{
 					"name": "Login",
@@ -122,14 +75,16 @@
 						{
 							"listen": "test",
 							"script": {
-								"type": "text/javascript",
 								"exec": [
 									"var jsonData = pm.response.json();",
 									"if (jsonData.data && jsonData.data.access_token) {",
 									"    pm.collectionVariables.set('access_token', jsonData.data.access_token);",
 									"    console.log('Access token saved to collection variable.');",
 									"}"
-								]
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
 							}
 						}
 					],
@@ -143,23 +98,12 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"email\": \"johndoe@example.com\",\n\t\"password\": \"securepassword123\"\n}"
+							"raw": "{\n\t\"email\": \"taufikjanuar35@gmail.com\",\n\t\"password\": \"Kamenraida@123\"\n}"
 						},
-						"url": {
-							"raw": "https://{{base_url}}/api/v1/auth/login",
-							"protocol": "https",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"auth",
-								"login"
-							]
-						},
+						"url": "https://{{base_url}}/api/v1/auth/login",
 						"description": "Login and receive an access token. The token is automatically saved to the `access_token` collection variable."
-					}
+					},
+					"response": []
 				},
 				{
 					"name": "Forgot Password",
@@ -175,21 +119,10 @@
 							"mode": "raw",
 							"raw": "{\n\t\"email\": \"johndoe@example.com\"\n}"
 						},
-						"url": {
-							"raw": "https://{{base_url}}/api/v1/auth/forgot-password",
-							"protocol": "https",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"auth",
-								"forgot-password"
-							]
-						},
+						"url": "https://{{base_url}}/api/v1/auth/forgot-password",
 						"description": "Request a password reset email."
-					}
+					},
+					"response": []
 				},
 				{
 					"name": "Verify Forgot Password",
@@ -218,7 +151,8 @@
 							]
 						},
 						"description": "Verify the forgot password code before resetting."
-					}
+					},
+					"response": []
 				},
 				{
 					"name": "Reset Password",
@@ -255,123 +189,89 @@
 							]
 						},
 						"description": "Reset user password using the verified forgot password code."
-					}
+					},
+					"response": []
 				}
-			]
+			],
+			"description": "Authentication & authorization endpoints (register, login, password reset)."
 		},
 		{
 			"name": "Shortener Service",
-			"description": "URL shortener redirect endpoint.",
 			"item": [
 				{
 					"name": "Health Check",
 					"request": {
 						"method": "GET",
 						"header": [],
-						"url": {
-							"raw": "https://{{base_url}}/api/v1/shortener/health-check",
-							"protocol": "https",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"shortener",
-								"health-check"
-							]
-						},
+						"url": "https://{{base_url}}/api/v1/shortener/health-check",
 						"description": "Check if the Shortener service is healthy."
-					}
+					},
+					"response": []
 				},
 				{
 					"name": "Click Short URL (via API)",
 					"request": {
 						"method": "GET",
 						"header": [],
-						"url": {
-							"raw": "https://{{base_url}}/api/v1/shortener/{{short_url}}",
-							"protocol": "https",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"shortener",
-								"{{short_url}}"
-							]
-						},
+						"url": "https://{{base_url}}/api/v1/shortener/{{short_url}}",
 						"description": "Resolve a short URL and redirect to the full URL."
-					}
+					},
+					"response": []
 				},
 				{
 					"name": "Click Short URL (via /s/ alias)",
 					"request": {
 						"method": "GET",
 						"header": [],
-						"url": {
-							"raw": "https://{{base_url}}/s/{{short_url}}",
-							"protocol": "https",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"s",
-								"{{short_url}}"
-							]
-						},
+						"url": "https://{{base_url}}/s/{{short_url}}",
 						"description": "Alias for short URL redirect. Example: https://localhost/s/abc123"
-					}
+					},
+					"response": []
 				},
 				{
 					"name": "Click Short URL (root-level)",
 					"request": {
 						"method": "GET",
 						"header": [],
-						"url": {
-							"raw": "https://{{base_url}}/{{short_url}}",
-							"protocol": "https",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"{{short_url}}"
-							]
-						},
+						"url": "https://{{base_url}}/{{short_url}}",
 						"description": "Shortest possible redirect — code at root level. Example: https://localhost/abc123 or https://skt.id/abc123"
-					}
+					},
+					"response": []
+				},
+				{
+					"name": "Generate QR Code",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "https://{{base_url}}/api/v1/shortener/{{short_url}}/qr"
+					},
+					"response": []
 				}
-			]
+			],
+			"description": "URL shortener redirect endpoint."
 		},
 		{
 			"name": "User Service",
-			"description": "User profile, dashboard, and short link management. All endpoints require authentication.",
 			"item": [
 				{
 					"name": "Health Check",
 					"request": {
 						"method": "GET",
 						"header": [],
-						"url": {
-							"raw": "https://{{base_url}}/api/v1/user/health-check",
-							"protocol": "https",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"user",
-								"health-check"
-							]
-						},
+						"url": "https://{{base_url}}/api/v1/user/health-check",
 						"description": "Check if the User service is healthy."
-					}
+					},
+					"response": []
 				},
 				{
 					"name": "Get Profile",
 					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": {
+								"token": "{{access_token}}"
+							}
+						},
 						"method": "GET",
 						"header": [
 							{
@@ -379,21 +279,10 @@
 								"value": "Bearer {{access_token}}"
 							}
 						],
-						"url": {
-							"raw": "https://{{base_url}}/api/v1/user/me",
-							"protocol": "https",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"user",
-								"me"
-							]
-						},
+						"url": "https://{{base_url}}/api/v1/user/me",
 						"description": "Get the authenticated user's profile."
-					}
+					},
+					"response": []
 				},
 				{
 					"name": "Edit Profile",
@@ -413,22 +302,10 @@
 							"mode": "raw",
 							"raw": "{\n\t\"full_name\": \"John Updated\"\n}"
 						},
-						"url": {
-							"raw": "https://{{base_url}}/api/v1/user/me/edit",
-							"protocol": "https",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"user",
-								"me",
-								"edit"
-							]
-						},
+						"url": "https://{{base_url}}/api/v1/user/me/edit",
 						"description": "Update the authenticated user's profile."
-					}
+					},
+					"response": []
 				},
 				{
 					"name": "Dashboard",
@@ -441,7 +318,7 @@
 							}
 						],
 						"url": {
-							"raw": "https://{{base_url}}/api/v1/user/dashboard",
+							"raw": "https://{{base_url}}/api/v1/user/dashboard?limit=10",
 							"protocol": "https",
 							"host": [
 								"{{base_url}}"
@@ -451,14 +328,27 @@
 								"v1",
 								"user",
 								"dashboard"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								}
 							]
 						},
 						"description": "Get the user's dashboard with short link analytics."
-					}
+					},
+					"response": []
 				},
 				{
 					"name": "Generate Short URL",
 					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": {
+								"token": "{{access_token}}"
+							}
+						},
 						"method": "POST",
 						"header": [
 							{
@@ -472,24 +362,12 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"full_url\": \"https://example.com/very/long/url/to/shorten\"\n}"
+							"raw": "{\n\t\"full_url\": \"https://google.com\"\n}"
 						},
-						"url": {
-							"raw": "https://{{base_url}}/api/v1/user/short/generate",
-							"protocol": "https",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"user",
-								"short",
-								"generate"
-							]
-						},
+						"url": "https://{{base_url}}/api/v1/user/short/generate",
 						"description": "Generate a new short URL for the authenticated user."
-					}
+					},
+					"response": []
 				},
 				{
 					"name": "Update Short URL",
@@ -509,22 +387,10 @@
 							"mode": "raw",
 							"raw": "{\n\t\"full_url\": \"https://example.com/updated/destination/url\"\n}"
 						},
-						"url": {
-							"raw": "https://{{base_url}}/api/v1/user/short/{{short_id}}",
-							"protocol": "https",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"user",
-								"short",
-								"{{short_id}}"
-							]
-						},
+						"url": "https://{{base_url}}/api/v1/user/short/{{short_id}}",
 						"description": "Update the destination URL of an existing short link."
-					}
+					},
+					"response": []
 				},
 				{
 					"name": "Delete Short URL",
@@ -536,22 +402,10 @@
 								"value": "Bearer {{access_token}}"
 							}
 						],
-						"url": {
-							"raw": "https://{{base_url}}/api/v1/user/short/{{short_id}}",
-							"protocol": "https",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"user",
-								"short",
-								"{{short_id}}"
-							]
-						},
+						"url": "https://{{base_url}}/api/v1/user/short/{{short_id}}",
 						"description": "Delete a short link owned by the authenticated user."
-					}
+					},
+					"response": []
 				},
 				{
 					"name": "Upload Avatar",
@@ -568,54 +422,62 @@
 							"formdata": [
 								{
 									"key": "avatar",
-									"type": "file",
-									"src": "",
-									"description": "Avatar image file (jpg, png, etc.)"
+									"value": "",
+									"description": "Avatar image file (jpg, png, etc.)",
+									"type": "file"
 								}
 							]
 						},
-						"url": {
-							"raw": "https://{{base_url}}/api/v1/user/upload/avatar",
-							"protocol": "https",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"user",
-								"upload",
-								"avatar"
-							]
-						},
+						"url": "https://{{base_url}}/api/v1/user/upload/avatar",
 						"description": "Upload a new avatar image for the authenticated user."
-					}
+					},
+					"response": []
 				}
-			]
+			],
+			"description": "User profile, dashboard, and short link management. All endpoints require authentication."
 		},
 		{
 			"name": "Gateway",
-			"description": "NGINX API Gateway level endpoints.",
 			"item": [
 				{
 					"name": "Gateway Health",
 					"request": {
 						"method": "GET",
 						"header": [],
-						"url": {
-							"raw": "https://{{base_url}}/health",
-							"protocol": "https",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"health"
-							]
-						},
+						"url": "https://{{base_url}}/health",
 						"description": "Check if the NGINX API Gateway is running."
-					}
+					},
+					"response": []
 				}
-			]
+			],
+			"description": "NGINX API Gateway level endpoints."
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "localhost",
+			"type": "string"
+		},
+		{
+			"key": "access_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "verify_code",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "short_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "short_url",
+			"value": "",
+			"type": "string"
 		}
 	]
 }

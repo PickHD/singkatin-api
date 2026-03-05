@@ -8,11 +8,13 @@ import (
 
 	shortenerpb "singkatin-api/proto/api/v1/proto/shortener"
 	"singkatin-api/shortener/internal/config"
+	"singkatin-api/shortener/internal/dto/request"
 	"singkatin-api/shortener/internal/model"
 	"singkatin-api/shortener/internal/service"
 	"singkatin-api/shortener/pkg/response"
 
 	"github.com/labstack/echo/v4"
+	"github.com/skip2/go-qrcode"
 	"go.opentelemetry.io/otel/sdk/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -27,6 +29,7 @@ type (
 
 		// http
 		ClickShortener(ctx echo.Context) error
+		GenerateQRCode(ctx echo.Context) error
 
 		// rabbitmq
 		ProcessCreateShortUser(ctx context.Context, msg *shortenerpb.CreateShortenerMessage) error
@@ -58,18 +61,24 @@ func (c *ShortControllerImpl) GetListShortenerByUserID(ctx context.Context, req 
 	_, span := tr.Start(ctx, "Start GetListShortenerByUserID")
 	defer span.End()
 
-	data, err := c.ShortSvc.GetListShortenerByUserID(ctx, req.GetUserId())
+	filter := &request.GetShortRequest{
+		UserID: req.GetUserId(),
+		Page:   req.GetPage(),
+		Limit:  req.GetLimit(),
+	}
+
+	data, err := c.ShortSvc.GetListShortenerByUserID(ctx, filter)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed Get List Shortener By UserID %s", err.Error())
 	}
 
-	if len(data) < 1 {
+	if len(data.Shorts) < 1 {
 		return &shortenerpb.ListShortenerResponse{}, nil
 	}
 
-	shorteners := make([]*shortenerpb.Shortener, len(data))
+	shorteners := make([]*shortenerpb.Shortener, len(data.Shorts))
 
-	for i, q := range data {
+	for i, q := range data.Shorts {
 		shorteners[i] = &shortenerpb.Shortener{
 			Id:       q.ID.Hex(),
 			FullUrl:  q.FullURL,
@@ -80,6 +89,9 @@ func (c *ShortControllerImpl) GetListShortenerByUserID(ctx context.Context, req 
 
 	return &shortenerpb.ListShortenerResponse{
 		Shorteners: shorteners,
+		Limit:      data.Limit,
+		Page:       data.Page,
+		TotalCount: data.TotalCount,
 	}, nil
 }
 
@@ -104,7 +116,14 @@ func (c *ShortControllerImpl) ClickShortener(ctx echo.Context) error {
 	userCtxValue, span := tr.Start(userCtxValue, "Start ClickShortener")
 	defer span.End()
 
-	data, err := c.ShortSvc.ClickShort(userCtxValue, ctx.Param("short_url"))
+	req := &request.UpdateVisitorRequest{
+		ShortURL:  ctx.Param("short_url"),
+		UserAgent: ctx.Request().UserAgent(),
+		IPAddress: ctx.RealIP(),
+		Referer:   ctx.Request().Referer(),
+	}
+
+	data, err := c.ShortSvc.ClickShort(userCtxValue, req)
 	if err != nil {
 		if strings.Contains(err.Error(), string(model.Validation)) {
 			return response.NewResponses[any](ctx, http.StatusBadRequest, err.Error(), ctx.Param("short_url"), err, nil)
@@ -129,6 +148,29 @@ func (c *ShortControllerImpl) ClickShortener(ctx echo.Context) error {
 	return ctx.Redirect(statusCode, data.FullURL)
 }
 
+func (c *ShortControllerImpl) GenerateQRCode(ctx echo.Context) error {
+	tr := c.Tracer.Tracer("Shortener-GenerateQRCode Controller")
+	userCtxValue := ctx.Request().Context()
+	userCtxValue, span := tr.Start(userCtxValue, "Start GenerateQRCode")
+	defer span.End()
+
+	data, err := c.ShortSvc.GetByShortURL(userCtxValue, ctx.Param("short_url"))
+	if err != nil {
+		return response.NewResponses[any](ctx, http.StatusInternalServerError, "failed generate QR code", ctx.Param("short_url"), err, nil)
+	}
+
+	if data == nil {
+		return response.NewResponses[any](ctx, http.StatusNotFound, "short URL not found", ctx.Param("short_url"), nil, nil)
+	}
+
+	png, err := qrcode.Encode(data.FullURL, qrcode.Medium, 512)
+	if err != nil {
+		return response.NewResponses[any](ctx, http.StatusInternalServerError, "failed generate QR code", ctx.Param("short_url"), err, nil)
+	}
+
+	return ctx.Blob(http.StatusOK, "image/png", png)
+}
+
 func (c *ShortControllerImpl) ProcessCreateShortUser(ctx context.Context, msg *shortenerpb.CreateShortenerMessage) error {
 	tr := c.Tracer.Tracer("Shortener-ProcessCreateShortUser Controller")
 	ctx, span := tr.Start(ctx, "Start ProcessCreateShortUser")
@@ -140,7 +182,7 @@ func (c *ShortControllerImpl) ProcessCreateShortUser(ctx context.Context, msg *s
 		expiresAt = &t
 	}
 
-	req := &model.CreateShortRequest{
+	req := &request.CreateShortRequest{
 		UserID:    msg.GetUserId(),
 		FullURL:   msg.GetFullUrl(),
 		ShortURL:  msg.GetShortUrl(),
@@ -160,8 +202,11 @@ func (c *ShortControllerImpl) ProcessUpdateVisitorCount(ctx context.Context, msg
 	ctx, span := tr.Start(ctx, "Start ProcessUpdateVisitorCount")
 	defer span.End()
 
-	req := &model.UpdateVisitorRequest{
-		ShortURL: msg.GetShortUrl(),
+	req := &request.UpdateVisitorRequest{
+		ShortURL:  msg.GetShortUrl(),
+		UserAgent: msg.GetUserAgent(),
+		IPAddress: msg.GetIpAddress(),
+		Referer:   msg.GetReferer(),
 	}
 
 	err := c.ShortSvc.UpdateVisitorShort(ctx, req)
@@ -177,7 +222,7 @@ func (c *ShortControllerImpl) ProcessUpdateShortUser(ctx context.Context, msg *s
 	ctx, span := tr.Start(ctx, "Start ProcessUpdateShortUser")
 	defer span.End()
 
-	req := &model.UpdateShortRequest{
+	req := &request.UpdateShortRequest{
 		ID:      msg.GetId(),
 		FullURL: msg.GetFullUrl(),
 	}
@@ -195,7 +240,7 @@ func (c *ShortControllerImpl) ProcessDeleteShortUser(ctx context.Context, msg *s
 	ctx, span := tr.Start(ctx, "Start ProcessDeleteShortUser")
 	defer span.End()
 
-	req := &model.DeleteShortRequest{
+	req := &request.DeleteShortRequest{
 		ID: msg.GetId(),
 	}
 

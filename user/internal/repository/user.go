@@ -6,6 +6,7 @@ import (
 	shortenerpb "singkatin-api/proto/api/v1/proto/shortener"
 	uploadpb "singkatin-api/proto/api/v1/proto/upload"
 	"singkatin-api/user/internal/config"
+	"singkatin-api/user/internal/dto/request"
 	"singkatin-api/user/internal/model"
 	"singkatin-api/user/pkg/logger"
 
@@ -21,11 +22,11 @@ type (
 	// UserRepository is an interface that has all the function to be implemented inside user repository
 	UserRepository interface {
 		FindByEmail(ctx context.Context, email string) (*model.User, error)
-		PublishCreateUserShortener(ctx context.Context, req *model.GenerateShortUserMessage) error
-		UpdateProfileByID(ctx context.Context, userID string, req *model.EditProfileRequest) error
-		PublishUploadAvatarUser(ctx context.Context, req *model.UploadAvatarRequest) error
+		PublishCreateUserShortener(ctx context.Context, req *request.GenerateShortUserMessage) error
+		UpdateProfileByID(ctx context.Context, userID string, req *request.EditProfileRequest) error
+		PublishUploadAvatarUser(ctx context.Context, req *request.UploadAvatarRequest) error
 		UpdateAvatarUserByID(ctx context.Context, fileURL string, userID string) error
-		PublishUpdateUserShortener(ctx context.Context, shortID string, req *model.ShortUserRequest) error
+		PublishUpdateUserShortener(ctx context.Context, shortID string, req *request.ShortUserRequest) error
 		PublishDeleteUserShortener(ctx context.Context, shortID string) error
 	}
 
@@ -68,7 +69,7 @@ func (r *userRepositoryImpl) FindByEmail(ctx context.Context, email string) (*mo
 	return &user, nil
 }
 
-func (r *userRepositoryImpl) PublishCreateUserShortener(ctx context.Context, req *model.GenerateShortUserMessage) error {
+func (r *userRepositoryImpl) PublishCreateUserShortener(ctx context.Context, req *request.GenerateShortUserMessage) error {
 	tr := r.Tracer.Tracer("User-PublishCreateUserShortener Repository")
 	_, span := tr.Start(ctx, "Start PublishCreateUserShortener")
 	defer span.End()
@@ -106,7 +107,7 @@ func (r *userRepositoryImpl) PublishCreateUserShortener(ctx context.Context, req
 	return nil
 }
 
-func (r *userRepositoryImpl) UpdateProfileByID(ctx context.Context, userID string, req *model.EditProfileRequest) error {
+func (r *userRepositoryImpl) UpdateProfileByID(ctx context.Context, userID string, req *request.EditProfileRequest) error {
 	tr := r.Tracer.Tracer("User-UpdateProfileByID Repository")
 	_, span := tr.Start(ctx, "Start UpdateProfileByID")
 	defer span.End()
@@ -129,7 +130,7 @@ func (r *userRepositoryImpl) UpdateProfileByID(ctx context.Context, userID strin
 	return nil
 }
 
-func (r *userRepositoryImpl) PublishUploadAvatarUser(ctx context.Context, req *model.UploadAvatarRequest) error {
+func (r *userRepositoryImpl) PublishUploadAvatarUser(ctx context.Context, req *request.UploadAvatarRequest) error {
 	tr := r.Tracer.Tracer("User-PublishUploadAvatarUser Repository")
 	_, span := tr.Start(ctx, "Start PublishUploadAvatarUser")
 	defer span.End()
@@ -190,7 +191,7 @@ func (r *userRepositoryImpl) UpdateAvatarUserByID(ctx context.Context, fileURL s
 	return nil
 }
 
-func (r *userRepositoryImpl) PublishUpdateUserShortener(ctx context.Context, shortID string, req *model.ShortUserRequest) error {
+func (r *userRepositoryImpl) PublishUpdateUserShortener(ctx context.Context, shortID string, req *request.ShortUserRequest) error {
 	tr := r.Tracer.Tracer("User-PublishUpdateUserShortener Repository")
 	_, span := tr.Start(ctx, "Start PublishUpdateUserShortener")
 	defer span.End()
@@ -266,7 +267,7 @@ func (r *userRepositoryImpl) PublishDeleteUserShortener(ctx context.Context, sho
 	return nil
 }
 
-func (r *userRepositoryImpl) prepareProtoPublishCreateUserShortenerMessage(req *model.GenerateShortUserMessage) *shortenerpb.CreateShortenerMessage {
+func (r *userRepositoryImpl) prepareProtoPublishCreateUserShortenerMessage(req *request.GenerateShortUserMessage) *shortenerpb.CreateShortenerMessage {
 	return &shortenerpb.CreateShortenerMessage{
 		FullUrl:   req.FullURL,
 		UserId:    req.UserID,
@@ -275,7 +276,7 @@ func (r *userRepositoryImpl) prepareProtoPublishCreateUserShortenerMessage(req *
 	}
 }
 
-func (r *userRepositoryImpl) prepareProtoPublishUploadAvatarUserMessage(req *model.UploadAvatarRequest) *uploadpb.UploadAvatarMessage {
+func (r *userRepositoryImpl) prepareProtoPublishUploadAvatarUserMessage(req *request.UploadAvatarRequest) *uploadpb.UploadAvatarMessage {
 	return &uploadpb.UploadAvatarMessage{
 		FileName:    req.FileName,
 		ContentType: req.ContentType,
@@ -283,7 +284,7 @@ func (r *userRepositoryImpl) prepareProtoPublishUploadAvatarUserMessage(req *mod
 	}
 }
 
-func (r *userRepositoryImpl) prepareProtoPublishUpdateUserShortenerMessage(shortID string, req *model.ShortUserRequest) *shortenerpb.UpdateShortenerMessage {
+func (r *userRepositoryImpl) prepareProtoPublishUpdateUserShortenerMessage(shortID string, req *request.ShortUserRequest) *shortenerpb.UpdateShortenerMessage {
 	return &shortenerpb.UpdateShortenerMessage{
 		Id:      shortID,
 		FullUrl: req.FullURL,

@@ -37,6 +37,7 @@ func (r *Router) setupRoutes() {
 	{
 		v1.GET("/health-check", r.container.HealthCheckController.Check)
 		v1.GET("/:short_url", r.container.ShortController.ClickShortener)
+		v1.GET("/:short_url/qr", r.container.ShortController.GenerateQRCode)
 	}
 }
 

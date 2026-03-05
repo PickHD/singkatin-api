@@ -7,6 +7,8 @@ import (
 
 	shortenerpb "singkatin-api/proto/api/v1/proto/shortener"
 	"singkatin-api/shortener/internal/config"
+	"singkatin-api/shortener/internal/dto/request"
+	"singkatin-api/shortener/internal/dto/response"
 	"singkatin-api/shortener/internal/model"
 	"singkatin-api/shortener/pkg/logger"
 	"strings"
@@ -24,18 +26,19 @@ import (
 type (
 	// ShortRepository is an interface that has all the function to be implemented inside short repository
 	ShortRepository interface {
-		GetListShortenerByUserID(ctx context.Context, userID string) ([]model.Short, error)
+		GetListShortenerByUserID(ctx context.Context, filter *request.GetShortRequest) (*response.GetShortResponse, error)
 		Create(ctx context.Context, req *model.Short) error
 		GetByShortURL(ctx context.Context, shortURL string) (*model.Short, error)
 		GetFullURLByKey(ctx context.Context, shortURL string) (string, bool, error)
 		GetByID(ctx context.Context, ID string) (*model.Short, error)
 		SetFullURLByKey(ctx context.Context, shortURL string, fullURL string, isPermanent bool, duration time.Duration) error
-		PublishUpdateVisitorCount(ctx context.Context, req *model.UpdateVisitorRequest) error
-		UpdateVisitorByShortURL(ctx context.Context, req *model.UpdateVisitorRequest) error
-		UpdateFullURLByID(ctx context.Context, req *model.UpdateShortRequest) error
-		DeleteByID(ctx context.Context, req *model.DeleteShortRequest) error
+		PublishUpdateVisitorCount(ctx context.Context, req *request.UpdateVisitorRequest) error
+		UpdateVisitorByShortURL(ctx context.Context, req *request.UpdateVisitorRequest) error
+		UpdateFullURLByID(ctx context.Context, req *request.UpdateShortRequest) error
+		DeleteByID(ctx context.Context, req *request.DeleteShortRequest) error
 		DeleteFullURLByKey(ctx context.Context, shortURL string) error
 		ExistsByShortURL(ctx context.Context, shortURL string, id string) (bool, error)
+		GetByFullURLAndUserID(ctx context.Context, req *request.CreateShortRequest) (*model.Short, error)
 	}
 
 	// shortRepositoryImpl is an app short struct that consists of all the dependencies needed for short repository
@@ -59,7 +62,7 @@ func NewShortRepository(config *config.Config, tracer *trace.TracerProvider, db 
 	}
 }
 
-func (r *shortRepositoryImpl) GetListShortenerByUserID(ctx context.Context, userID string) ([]model.Short, error) {
+func (r *shortRepositoryImpl) GetListShortenerByUserID(ctx context.Context, filter *request.GetShortRequest) (*response.GetShortResponse, error) {
 	tr := r.Tracer.Tracer("Shortener-GetListShortenerByUserID Repository")
 	ctx, span := tr.Start(ctx, "Start GetListShortenerByUserID")
 	defer span.End()
@@ -67,10 +70,16 @@ func (r *shortRepositoryImpl) GetListShortenerByUserID(ctx context.Context, user
 	shorts := []model.Short{}
 
 	cur, err := r.DB.Collection(r.Config.Database.ShortenersCollection).Find(ctx,
-		bson.D{{Key: "user_id", Value: userID}},
-		options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}, {Key: "_id", Value: -1}}))
+		bson.D{{Key: "user_id", Value: filter.UserID}},
+		options.Find().SetSkip((filter.Page-1)*filter.Limit).SetLimit(filter.Limit).SetSort(bson.D{{Key: "created_at", Value: -1}, {Key: "_id", Value: -1}}))
 	if err != nil {
 		logger.Error("ShortRepositoryImpl.GetListShortenerByUserID Find ERROR, ", err)
+		return nil, err
+	}
+
+	count, err := r.DB.Collection(r.Config.Database.ShortenersCollection).CountDocuments(ctx, bson.D{{Key: "user_id", Value: filter.UserID}})
+	if err != nil {
+		logger.Error("ShortRepositoryImpl.GetListShortenerByUserID CountDocuments ERROR, ", err)
 		return nil, err
 	}
 
@@ -90,7 +99,12 @@ func (r *shortRepositoryImpl) GetListShortenerByUserID(ctx context.Context, user
 		return nil, err
 	}
 
-	return shorts, nil
+	return &response.GetShortResponse{
+		Shorts:     shorts,
+		TotalCount: count,
+		Page:       filter.Page,
+		Limit:      filter.Limit,
+	}, nil
 }
 
 func (r *shortRepositoryImpl) Create(ctx context.Context, req *model.Short) error {
@@ -204,7 +218,7 @@ func (r *shortRepositoryImpl) SetFullURLByKey(ctx context.Context, shortURL stri
 	return nil
 }
 
-func (r *shortRepositoryImpl) PublishUpdateVisitorCount(ctx context.Context, req *model.UpdateVisitorRequest) error {
+func (r *shortRepositoryImpl) PublishUpdateVisitorCount(ctx context.Context, req *request.UpdateVisitorRequest) error {
 	tr := r.Tracer.Tracer("Shortener-PublishUpdateVisitorCount Repository")
 	_, span := tr.Start(ctx, "Start PublishUpdateVisitorCount")
 	defer span.End()
@@ -242,10 +256,12 @@ func (r *shortRepositoryImpl) PublishUpdateVisitorCount(ctx context.Context, req
 	return nil
 }
 
-func (r *shortRepositoryImpl) UpdateVisitorByShortURL(ctx context.Context, req *model.UpdateVisitorRequest) error {
+func (r *shortRepositoryImpl) UpdateVisitorByShortURL(ctx context.Context, req *request.UpdateVisitorRequest) error {
 	tr := r.Tracer.Tracer("Shortener-UpdateVisitorByShortURL Repository")
 	ctx, span := tr.Start(ctx, "Start UpdateVisitorByShortURL")
 	defer span.End()
+
+	// TODO: need to define transaction manager
 
 	_, err := r.DB.Collection(r.Config.Database.ShortenersCollection).UpdateOne(ctx,
 		bson.D{{Key: "short_url", Value: req.ShortURL}}, bson.M{
@@ -257,10 +273,22 @@ func (r *shortRepositoryImpl) UpdateVisitorByShortURL(ctx context.Context, req *
 		return err
 	}
 
+	_, err = r.DB.Collection(r.Config.Database.ClicksCollection).InsertOne(ctx, model.Click{
+		ShortURL:  req.ShortURL,
+		UserAgent: req.UserAgent,
+		IPAddress: req.IPAddress,
+		Referer:   req.Referer,
+		CreatedAt: time.Now().Unix(),
+	})
+	if err != nil {
+		logger.Error("ShortRepositoryImpl.UpdateVisitorByShortURL InsertOne ERROR, ", err)
+		return err
+	}
+
 	return nil
 }
 
-func (r *shortRepositoryImpl) UpdateFullURLByID(ctx context.Context, req *model.UpdateShortRequest) error {
+func (r *shortRepositoryImpl) UpdateFullURLByID(ctx context.Context, req *request.UpdateShortRequest) error {
 	tr := r.Tracer.Tracer("Shortener-UpdateFullURLByID Repository")
 	ctx, span := tr.Start(ctx, "Start UpdateFullURLByID")
 	defer span.End()
@@ -283,7 +311,7 @@ func (r *shortRepositoryImpl) UpdateFullURLByID(ctx context.Context, req *model.
 	return nil
 }
 
-func (r *shortRepositoryImpl) DeleteByID(ctx context.Context, req *model.DeleteShortRequest) error {
+func (r *shortRepositoryImpl) DeleteByID(ctx context.Context, req *request.DeleteShortRequest) error {
 	tr := r.Tracer.Tracer("Shortener-DeleteByID Repository")
 	ctx, span := tr.Start(ctx, "Start DeleteByID")
 	defer span.End()
@@ -345,8 +373,27 @@ func (r *shortRepositoryImpl) ExistsByShortURL(ctx context.Context, shortURL str
 	return count > 0, nil
 }
 
-func (r *shortRepositoryImpl) prepareProtoPublishUpdateVisitorCountMessage(req *model.UpdateVisitorRequest) *shortenerpb.UpdateVisitorCountMessage {
+func (r *shortRepositoryImpl) GetByFullURLAndUserID(ctx context.Context, req *request.CreateShortRequest) (*model.Short, error) {
+	tr := r.Tracer.Tracer("Shortener-GetByFullURLAndUserID Repository")
+	ctx, span := tr.Start(ctx, "Start GetByFullURLAndUserID")
+	defer span.End()
+
+	short := &model.Short{}
+
+	err := r.DB.Collection(r.Config.Database.ShortenersCollection).FindOne(ctx, bson.D{{Key: "full_url", Value: req.FullURL}, {Key: "user_id", Value: req.UserID}}).Decode(&short)
+	if err != nil {
+		logger.Error("ShortRepositoryImpl.GetByFullURLAndUserID FindOne ERROR,", err)
+		return nil, err
+	}
+
+	return short, nil
+}
+
+func (r *shortRepositoryImpl) prepareProtoPublishUpdateVisitorCountMessage(req *request.UpdateVisitorRequest) *shortenerpb.UpdateVisitorCountMessage {
 	return &shortenerpb.UpdateVisitorCountMessage{
-		ShortUrl: req.ShortURL,
+		ShortUrl:  req.ShortURL,
+		UserAgent: req.UserAgent,
+		IpAddress: req.IPAddress,
+		Referer:   req.Referer,
 	}
 }

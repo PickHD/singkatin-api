@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"singkatin-api/upload/internal/config"
-	"singkatin-api/upload/internal/model"
+	"singkatin-api/upload/internal/dto/request"
 	"singkatin-api/upload/internal/repository"
 
 	"go.opentelemetry.io/otel/sdk/trace"
@@ -13,7 +13,7 @@ import (
 type (
 	// UploadService is an interface that has all the function to be implemented inside upload service
 	UploadService interface {
-		UploadAvatarUser(ctx context.Context, req *model.UploadAvatarRequest) error
+		UploadAvatarUser(ctx context.Context, req *request.UploadAvatarRequest) error
 	}
 
 	uploadServiceImpl struct {
@@ -32,7 +32,7 @@ func NewUploadService(config *config.Config, tracer *trace.TracerProvider, uploa
 	}
 }
 
-func (s *uploadServiceImpl) UploadAvatarUser(ctx context.Context, req *model.UploadAvatarRequest) error {
+func (s *uploadServiceImpl) UploadAvatarUser(ctx context.Context, req *request.UploadAvatarRequest) error {
 	tr := s.Tracer.Tracer("Upload-UploadAvatarUser Service")
 	_, span := tr.Start(ctx, "Start UploadObject")
 	defer span.End()

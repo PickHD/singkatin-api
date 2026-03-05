@@ -5,7 +5,7 @@ import (
 
 	uploadpb "singkatin-api/proto/api/v1/proto/upload"
 	"singkatin-api/upload/internal/config"
-	"singkatin-api/upload/internal/model"
+	"singkatin-api/upload/internal/dto/request"
 	"singkatin-api/upload/internal/service"
 
 	"go.opentelemetry.io/otel/sdk/trace"
@@ -38,7 +38,7 @@ func (c *uploadControllerImpl) ProcessUploadAvatarUser(ctx context.Context, msg 
 	_, span := tr.Start(ctx, "Start ProcessUploadAvatarUser")
 	defer span.End()
 
-	req := &model.UploadAvatarRequest{
+	req := &request.UploadAvatarRequest{
 		FileName:    msg.GetFileName(),
 		ContentType: msg.GetContentType(),
 		Avatars:     msg.GetAvatars(),

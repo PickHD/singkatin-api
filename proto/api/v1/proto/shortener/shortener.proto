@@ -29,10 +29,15 @@ message ExistsByShortURLResponse {
 
 message ListShortenerRequest {
     string user_id=1;
+    int64 page=2;
+    int64 limit=3;
 }
 
 message ListShortenerResponse {
     repeated Shortener shorteners=1;
+    int64 total_count=2;
+    int64 page=3;
+    int64 limit=4;
 }
 
 message GetShortenerByIDRequest {
@@ -52,6 +57,9 @@ message CreateShortenerMessage {
 
 message UpdateVisitorCountMessage {
     string short_url=1;
+    string user_agent=2;
+    string ip_address=3;
+    string referer=4;
 }
 
 message UpdateShortenerMessage {

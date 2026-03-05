@@ -32,6 +32,7 @@ type (
 		Name                 string
 		UsersCollection      string
 		ShortenersCollection string
+		ClicksCollection     string
 	}
 
 	Redis struct {
@@ -70,6 +71,7 @@ func loadConfiguration() *Config {
 			Name:                 getEnv("DB_NAME"),
 			UsersCollection:      getEnv("DB_COLLECTION_USERS"),
 			ShortenersCollection: getEnv("DB_COLLECTION_SHORTENERS"),
+			ClicksCollection:     getEnv("DB_COLLECTION_CLICKS"),
 		},
 		Redis: &Redis{
 			Host: getEnv("REDIS_HOST"),

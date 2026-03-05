@@ -13,6 +13,7 @@ const (
 	Type       ErrorKind = "Type Error"
 	NotFound   ErrorKind = "Not Found"
 	Gone       ErrorKind = "Gone"
+	Duplicate  ErrorKind = "Duplicate"
 	Unknown    ErrorKind = "Unknown Error"
 	Internal   ErrorKind = "Internal Server Error"
 )

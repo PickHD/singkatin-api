@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"singkatin-api/auth/internal/config"
+	"singkatin-api/auth/internal/dto/request"
 	"singkatin-api/auth/internal/model"
 	"singkatin-api/auth/internal/service"
 	"singkatin-api/auth/pkg/response"
@@ -42,7 +43,7 @@ func NewAuthController(config *config.Config, tracer *trace.TracerProvider, auth
 }
 
 func (c *authControllerImpl) Register(ctx *gin.Context) {
-	var req model.RegisterRequest
+	var req request.RegisterRequest
 
 	tr := c.Tracer.Tracer("Auth-Register Controller")
 	_, span := tr.Start(ctx, "Start Register")
@@ -68,7 +69,7 @@ func (c *authControllerImpl) Register(ctx *gin.Context) {
 }
 
 func (c *authControllerImpl) Login(ctx *gin.Context) {
-	var req model.LoginRequest
+	var req request.LoginRequest
 
 	tr := c.Tracer.Tracer("Auth-Login Controller")
 	_, span := tr.Start(ctx, "Start Login")
@@ -120,7 +121,7 @@ func (c *authControllerImpl) VerifyRegister(ctx *gin.Context) {
 }
 
 func (c *authControllerImpl) ForgotPassword(ctx *gin.Context) {
-	var req model.ForgotPasswordRequest
+	var req request.ForgotPasswordRequest
 
 	tr := c.Tracer.Tracer("Auth-ForgotPassword Controller")
 	_, span := tr.Start(ctx, "Start ForgotPassword")
@@ -176,7 +177,7 @@ func (c *authControllerImpl) ResetPassword(ctx *gin.Context) {
 	_, span := tr.Start(ctx, "Start ResetPassword")
 	defer span.End()
 
-	var req model.ResetPasswordRequest
+	var req request.ResetPasswordRequest
 
 	getCode := ctx.Query("code")
 

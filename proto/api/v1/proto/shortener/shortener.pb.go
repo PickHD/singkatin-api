@@ -196,6 +196,8 @@ func (x *ExistsByShortURLResponse) GetExists() bool {
 type ListShortenerRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Page          int64                  `protobuf:"varint,2,opt,name=page,proto3" json:"page,omitempty"`
+	Limit         int64                  `protobuf:"varint,3,opt,name=limit,proto3" json:"limit,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -237,9 +239,26 @@ func (x *ListShortenerRequest) GetUserId() string {
 	return ""
 }
 
+func (x *ListShortenerRequest) GetPage() int64 {
+	if x != nil {
+		return x.Page
+	}
+	return 0
+}
+
+func (x *ListShortenerRequest) GetLimit() int64 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
 type ListShortenerResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Shorteners    []*Shortener           `protobuf:"bytes,1,rep,name=shorteners,proto3" json:"shorteners,omitempty"`
+	TotalCount    int64                  `protobuf:"varint,2,opt,name=total_count,json=totalCount,proto3" json:"total_count,omitempty"`
+	Page          int64                  `protobuf:"varint,3,opt,name=page,proto3" json:"page,omitempty"`
+	Limit         int64                  `protobuf:"varint,4,opt,name=limit,proto3" json:"limit,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -279,6 +298,27 @@ func (x *ListShortenerResponse) GetShorteners() []*Shortener {
 		return x.Shorteners
 	}
 	return nil
+}
+
+func (x *ListShortenerResponse) GetTotalCount() int64 {
+	if x != nil {
+		return x.TotalCount
+	}
+	return 0
+}
+
+func (x *ListShortenerResponse) GetPage() int64 {
+	if x != nil {
+		return x.Page
+	}
+	return 0
+}
+
+func (x *ListShortenerResponse) GetLimit() int64 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
 }
 
 type GetShortenerByIDRequest struct {
@@ -440,6 +480,9 @@ func (x *CreateShortenerMessage) GetExpiresAt() int64 {
 type UpdateVisitorCountMessage struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ShortUrl      string                 `protobuf:"bytes,1,opt,name=short_url,json=shortUrl,proto3" json:"short_url,omitempty"`
+	UserAgent     string                 `protobuf:"bytes,2,opt,name=user_agent,json=userAgent,proto3" json:"user_agent,omitempty"`
+	IpAddress     string                 `protobuf:"bytes,3,opt,name=ip_address,json=ipAddress,proto3" json:"ip_address,omitempty"`
+	Referer       string                 `protobuf:"bytes,4,opt,name=referer,proto3" json:"referer,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -477,6 +520,27 @@ func (*UpdateVisitorCountMessage) Descriptor() ([]byte, []int) {
 func (x *UpdateVisitorCountMessage) GetShortUrl() string {
 	if x != nil {
 		return x.ShortUrl
+	}
+	return ""
+}
+
+func (x *UpdateVisitorCountMessage) GetUserAgent() string {
+	if x != nil {
+		return x.UserAgent
+	}
+	return ""
+}
+
+func (x *UpdateVisitorCountMessage) GetIpAddress() string {
+	if x != nil {
+		return x.IpAddress
+	}
+	return ""
+}
+
+func (x *UpdateVisitorCountMessage) GetReferer() string {
+	if x != nil {
+		return x.Referer
 	}
 	return ""
 }
@@ -601,13 +665,19 @@ const file_api_v1_proto_shortener_shortener_proto_rawDesc = "" +
 	"\tshort_url\x18\x01 \x01(\tR\bshortUrl\x12\x0e\n" +
 	"\x02id\x18\x02 \x01(\tR\x02id\"2\n" +
 	"\x18ExistsByShortURLResponse\x12\x16\n" +
-	"\x06exists\x18\x01 \x01(\bR\x06exists\"/\n" +
+	"\x06exists\x18\x01 \x01(\bR\x06exists\"Y\n" +
 	"\x14ListShortenerRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\"Z\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x12\n" +
+	"\x04page\x18\x02 \x01(\x03R\x04page\x12\x14\n" +
+	"\x05limit\x18\x03 \x01(\x03R\x05limit\"\xa5\x01\n" +
 	"\x15ListShortenerResponse\x12A\n" +
 	"\n" +
 	"shorteners\x18\x01 \x03(\v2!.api.v1.proto.shortener.ShortenerR\n" +
-	"shorteners\")\n" +
+	"shorteners\x12\x1f\n" +
+	"\vtotal_count\x18\x02 \x01(\x03R\n" +
+	"totalCount\x12\x12\n" +
+	"\x04page\x18\x03 \x01(\x03R\x04page\x12\x14\n" +
+	"\x05limit\x18\x04 \x01(\x03R\x05limit\")\n" +
 	"\x17GetShortenerByIDRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"[\n" +
 	"\x18GetShortenerByIDResponse\x12?\n" +
@@ -617,9 +687,14 @@ const file_api_v1_proto_shortener_shortener_proto_rawDesc = "" +
 	"\bfull_url\x18\x02 \x01(\tR\afullUrl\x12\x1b\n" +
 	"\tshort_url\x18\x03 \x01(\tR\bshortUrl\x12\x1d\n" +
 	"\n" +
-	"expires_at\x18\x04 \x01(\x03R\texpiresAt\"8\n" +
+	"expires_at\x18\x04 \x01(\x03R\texpiresAt\"\x90\x01\n" +
 	"\x19UpdateVisitorCountMessage\x12\x1b\n" +
-	"\tshort_url\x18\x01 \x01(\tR\bshortUrl\"`\n" +
+	"\tshort_url\x18\x01 \x01(\tR\bshortUrl\x12\x1d\n" +
+	"\n" +
+	"user_agent\x18\x02 \x01(\tR\tuserAgent\x12\x1d\n" +
+	"\n" +
+	"ip_address\x18\x03 \x01(\tR\tipAddress\x12\x18\n" +
+	"\areferer\x18\x04 \x01(\tR\areferer\"`\n" +
 	"\x16UpdateShortenerMessage\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x19\n" +
 	"\bfull_url\x18\x02 \x01(\tR\afullUrl\x12\x1b\n" +

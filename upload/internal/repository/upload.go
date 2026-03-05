@@ -5,7 +5,7 @@ import (
 	"context"
 
 	"singkatin-api/upload/internal/config"
-	"singkatin-api/upload/internal/model"
+	"singkatin-api/upload/internal/dto/request"
 	"singkatin-api/upload/pkg/logger"
 
 	"github.com/minio/minio-go/v7"
@@ -16,7 +16,7 @@ import (
 type (
 	// UploadRepository is an interface that has all the function to be implemented inside upload repository
 	UploadRepository interface {
-		UploadObject(ctx context.Context, req *model.UploadAvatarRequest) error
+		UploadObject(ctx context.Context, req *request.UploadAvatarRequest) error
 	}
 
 	uploadRepositoryImpl struct {
@@ -35,7 +35,7 @@ func NewUploadRepository(config *config.Config, tracer *trace.TracerProvider, mi
 	}
 }
 
-func (r *uploadRepositoryImpl) UploadObject(ctx context.Context, req *model.UploadAvatarRequest) error {
+func (r *uploadRepositoryImpl) UploadObject(ctx context.Context, req *request.UploadAvatarRequest) error {
 	tr := r.Tracer.Tracer("Upload-UploadObject Repository")
 	_, span := tr.Start(ctx, "Start UploadObject")
 	defer span.End()

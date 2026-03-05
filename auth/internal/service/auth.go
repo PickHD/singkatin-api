@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"singkatin-api/auth/internal/config"
+	"singkatin-api/auth/internal/dto/request"
+	"singkatin-api/auth/internal/dto/response"
 	"singkatin-api/auth/internal/infrastructure"
 	"singkatin-api/auth/internal/model"
 	"singkatin-api/auth/internal/repository"
@@ -19,11 +21,11 @@ import (
 type (
 	// AuthService is an interface that has all the function to be implemented inside auth service
 	AuthService interface {
-		RegisterUser(ctx context.Context, req *model.RegisterRequest) (*model.RegisterResponse, error)
-		LoginUser(ctx context.Context, req *model.LoginRequest) (*model.LoginResponse, error)
-		VerifyCode(ctx context.Context, code string, verificationType model.VerificationType) (*model.VerifyCodeResponse, error)
-		ForgotPasswordUser(ctx context.Context, req *model.ForgotPasswordRequest) error
-		ResetPasswordUser(ctx context.Context, req *model.ResetPasswordRequest, code string) error
+		RegisterUser(ctx context.Context, req *request.RegisterRequest) (*response.RegisterResponse, error)
+		LoginUser(ctx context.Context, req *request.LoginRequest) (*response.LoginResponse, error)
+		VerifyCode(ctx context.Context, code string, verificationType model.VerificationType) (*response.VerifyCodeResponse, error)
+		ForgotPasswordUser(ctx context.Context, req *request.ForgotPasswordRequest) error
+		ResetPasswordUser(ctx context.Context, req *request.ResetPasswordRequest, code string) error
 	}
 
 	// authServiceImpl is an app auth struct that consists of all the dependencies needed for auth service
@@ -47,7 +49,7 @@ func NewAuthService(config *config.Config, tracer *trace.TracerProvider, mailer 
 	}
 }
 
-func (s *authServiceImpl) RegisterUser(ctx context.Context, req *model.RegisterRequest) (*model.RegisterResponse, error) {
+func (s *authServiceImpl) RegisterUser(ctx context.Context, req *request.RegisterRequest) (*response.RegisterResponse, error) {
 	tr := s.Tracer.Tracer("Auth-RegisterUser service")
 	ctx, span := tr.Start(ctx, "Start RegisterUser")
 	defer span.End()
@@ -124,14 +126,14 @@ func (s *authServiceImpl) RegisterUser(ctx context.Context, req *model.RegisterR
 		return nil, err
 	}
 
-	return &model.RegisterResponse{
+	return &response.RegisterResponse{
 		ID:         data.ID.Hex(),
 		Email:      data.Email,
 		IsVerified: false,
 	}, nil
 }
 
-func (s *authServiceImpl) LoginUser(ctx context.Context, req *model.LoginRequest) (*model.LoginResponse, error) {
+func (s *authServiceImpl) LoginUser(ctx context.Context, req *request.LoginRequest) (*response.LoginResponse, error) {
 	tr := s.Tracer.Tracer("Auth-LoginUser service")
 	ctx, span := tr.Start(ctx, "Start LoginUser")
 	defer span.End()
@@ -157,13 +159,13 @@ func (s *authServiceImpl) LoginUser(ctx context.Context, req *model.LoginRequest
 		return nil, err
 	}
 
-	return &model.LoginResponse{
+	return &response.LoginResponse{
 		AccessToken: token,
 		Type:        "Bearer",
 	}, nil
 }
 
-func (s *authServiceImpl) VerifyCode(ctx context.Context, code string, verificationType model.VerificationType) (*model.VerifyCodeResponse, error) {
+func (s *authServiceImpl) VerifyCode(ctx context.Context, code string, verificationType model.VerificationType) (*response.VerifyCodeResponse, error) {
 	tr := s.Tracer.Tracer("Auth-VerifyCode service")
 	ctx, span := tr.Start(ctx, "Start VerifyCode")
 	defer span.End()
@@ -186,12 +188,12 @@ func (s *authServiceImpl) VerifyCode(ctx context.Context, code string, verificat
 	case model.ForgotPasswordVerification:
 	}
 
-	return &model.VerifyCodeResponse{
+	return &response.VerifyCodeResponse{
 		IsVerified: true,
 	}, nil
 }
 
-func (s *authServiceImpl) ForgotPasswordUser(ctx context.Context, req *model.ForgotPasswordRequest) error {
+func (s *authServiceImpl) ForgotPasswordUser(ctx context.Context, req *request.ForgotPasswordRequest) error {
 	tr := s.Tracer.Tracer("Auth-ForgotPasswordUser service")
 	ctx, span := tr.Start(ctx, "Start ForgotPasswordUser")
 	defer span.End()
@@ -260,7 +262,7 @@ func (s *authServiceImpl) ForgotPasswordUser(ctx context.Context, req *model.For
 	return nil
 }
 
-func (s *authServiceImpl) ResetPasswordUser(ctx context.Context, req *model.ResetPasswordRequest, code string) error {
+func (s *authServiceImpl) ResetPasswordUser(ctx context.Context, req *request.ResetPasswordRequest, code string) error {
 	tr := s.Tracer.Tracer("Auth-ResetPasswordUser service")
 	ctx, span := tr.Start(ctx, "Start ResetPasswordUser")
 	defer span.End()
@@ -296,7 +298,7 @@ func (s *authServiceImpl) ResetPasswordUser(ctx context.Context, req *model.Rese
 	return nil
 }
 
-func validateRegisterUser(req *model.RegisterRequest) error {
+func validateRegisterUser(req *request.RegisterRequest) error {
 	if req.FullName == "" {
 		return model.NewError(model.Validation, "full name required")
 	}
@@ -321,7 +323,7 @@ func validateRegisterUser(req *model.RegisterRequest) error {
 	return nil
 }
 
-func validateLoginUser(req *model.LoginRequest) error {
+func validateLoginUser(req *request.LoginRequest) error {
 	if !model.IsValidEmail.MatchString(req.Email) {
 		return model.NewError(model.Validation, "invalid email")
 	}
